@@ -113,6 +113,28 @@ function SalonBookingPage() {
       return;
     }
 
+    if (business.notification_email) {
+      const { error: notificationError } = await supabase.functions.invoke(
+        'send-booking-notification',
+        {
+          body: {
+            to: business.notification_email,
+            businessName: business.business_name,
+            clientName: formData.name,
+            clientPhone: formData.phone,
+            serviceName: selectedService.name,
+            bookingDate: formData.date,
+            bookingTime: formData.time,
+            notes: formData.notes,
+          },
+        },
+      );
+
+      if (notificationError) {
+        console.error('Booking notification email could not be sent:', notificationError);
+      }
+    }
+
     setIsSubmitted(true);
   }
 
