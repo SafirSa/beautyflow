@@ -1,9 +1,13 @@
-import { useState } from 'react';
-import { salon, services } from '../../data/mockData.js';
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { supabase } from '../../lib/supabaseClient.js';
 
 const timeOptions = ['10:00', '11:30', '13:00', '15:00', '17:00'];
 
 function SalonBookingPage() {
+  const { slug } = useParams();
+  const [business, setBusiness] = useState(null);
+  const [services, setServices] = useState([]);
   const [selectedServiceId, setSelectedServiceId] = useState('');
   const [formData, setFormData] = useState({
     name: '',
@@ -12,10 +16,52 @@ function SalonBookingPage() {
     time: '',
     notes: '',
   });
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [notFound, setNotFound] = useState(false);
 
   const selectedService = services.find((service) => service.id === selectedServiceId);
+  const currency = business?.currency || '₪';
+
+  useEffect(() => {
+    async function loadSalon() {
+      setIsLoading(true);
+      setError('');
+      setNotFound(false);
+
+      const { data: businessData, error: businessError } = await supabase
+        .from('businesses')
+        .select('*')
+        .eq('slug', slug)
+        .single();
+
+      if (businessError || !businessData) {
+        setNotFound(true);
+        setIsLoading(false);
+        return;
+      }
+
+      const { data: servicesData, error: servicesError } = await supabase
+        .from('services')
+        .select('*')
+        .eq('business_id', businessData.id)
+        .order('created_at', { ascending: true });
+
+      if (servicesError) {
+        setError(`Services could not be loaded: ${servicesError.message}`);
+        setIsLoading(false);
+        return;
+      }
+
+      setBusiness(businessData);
+      setServices(servicesData || []);
+      setIsLoading(false);
+    }
+
+    loadSalon();
+  }, [slug]);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -34,7 +80,7 @@ function SalonBookingPage() {
     setIsSubmitted(false);
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
 
     if (!selectedServiceId || !formData.name || !formData.phone || !formData.date || !formData.time) {
@@ -43,8 +89,49 @@ function SalonBookingPage() {
       return;
     }
 
+    setIsSubmitting(true);
     setError('');
+    setIsSubmitted(false);
+
+    const { error: bookingError } = await supabase.from('bookings').insert({
+      business_id: business.id,
+      client_name: formData.name,
+      phone: formData.phone,
+      service_id: selectedService.id,
+      service_name: selectedService.name,
+      booking_date: formData.date,
+      booking_time: formData.time,
+      status: 'pending',
+      notes: formData.notes,
+      price: selectedService.price,
+    });
+
+    setIsSubmitting(false);
+
+    if (bookingError) {
+      setError(`Appointment request could not be sent: ${bookingError.message}`);
+      return;
+    }
+
     setIsSubmitted(true);
+  }
+
+  if (isLoading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-white text-neutral-600">
+        Loading...
+      </main>
+    );
+  }
+
+  if (notFound) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-white px-4 text-center">
+        <p className="rounded-3xl border border-neutral-200 bg-white p-8 text-lg font-medium text-neutral-950 shadow-sm">
+          Salon not found.
+        </p>
+      </main>
+    );
   }
 
   return (
@@ -58,23 +145,23 @@ function SalonBookingPage() {
                   BeautyFlow Booking
                 </p>
                 <h1 className="mt-3 text-4xl font-semibold text-neutral-950 sm:text-5xl">
-                  {salon.name}
+                  {business.business_name}
                 </h1>
                 <p className="mt-4 max-w-2xl text-base leading-7 text-neutral-600">
-                  {salon.description}
+                  {business.description}
                 </p>
               </div>
 
               <div className="rounded-2xl bg-rose-50/70 p-5 text-sm text-neutral-700">
-                <p className="font-medium text-neutral-950">{salon.address}</p>
-                {salon.instagram ? (
+                <p className="font-medium text-neutral-950">{business.address}</p>
+                {business.instagram ? (
                   <a
-                    href={`https://instagram.com/${salon.instagram.replace('@', '')}`}
+                    href={`https://instagram.com/${business.instagram.replace('@', '')}`}
                     className="mt-2 inline-flex text-rose-600 hover:text-rose-700"
                     target="_blank"
                     rel="noreferrer"
                   >
-                    {salon.instagram}
+                    {business.instagram}
                   </a>
                 ) : null}
               </div>
@@ -88,6 +175,12 @@ function SalonBookingPage() {
           <div>
             <h2 className="text-2xl font-semibold text-neutral-950">Choose a service</h2>
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              {services.length === 0 ? (
+                <div className="rounded-3xl border border-neutral-200 bg-white p-6 text-neutral-600 shadow-sm sm:col-span-2">
+                  No services available yet.
+                </div>
+              ) : null}
+
               {services.map((service) => {
                 const isSelected = selectedServiceId === service.id;
 
@@ -117,9 +210,9 @@ function SalonBookingPage() {
                       />
                     </div>
                     <div className="mt-5 flex items-center justify-between text-sm">
-                      <span className="text-neutral-500">{service.durationMinutes} min</span>
+                      <span className="text-neutral-500">{service.duration_minutes} min</span>
                       <span className="font-semibold text-neutral-950">
-                        {salon.currency}
+                        {currency}
                         {service.price}
                       </span>
                     </div>
@@ -220,9 +313,10 @@ function SalonBookingPage() {
 
             <button
               type="submit"
+              disabled={isSubmitting}
               className="mt-6 w-full rounded-xl bg-neutral-950 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-neutral-800"
             >
-              Request Appointment
+              {isSubmitting ? 'Sending request...' : 'Request Appointment'}
             </button>
           </form>
         </div>

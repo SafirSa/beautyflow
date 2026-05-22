@@ -1,6 +1,50 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Button from '../../components/ui/Button.jsx';
+import { supabase } from '../../lib/supabaseClient.js';
+
+function createBaseSlug(businessName) {
+  return businessName
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'salon';
+}
+
+async function generateUniqueSlug(baseSlug) {
+  const { data, error } = await supabase
+    .from('businesses')
+    .select('slug')
+    .like('slug', `${baseSlug}%`);
+
+  if (error) {
+    throw error;
+  }
+
+  const existingSlugs = new Set((data || []).map((business) => business.slug));
+
+  if (!existingSlugs.has(baseSlug)) {
+    return baseSlug;
+  }
+
+  let suffix = 2;
+
+  while (existingSlugs.has(`${baseSlug}-${suffix}`)) {
+    suffix += 1;
+  }
+
+  return `${baseSlug}-${suffix}`;
+}
+
+function isDuplicateSlugError(error) {
+  return (
+    error?.code === '23505' ||
+    error?.message?.includes('businesses_slug_key') ||
+    error?.message?.includes('duplicate key')
+  );
+}
 
 function Register() {
   const navigate = useNavigate();
@@ -10,6 +54,8 @@ function Register() {
     email: '',
     password: '',
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -18,10 +64,88 @@ function Register() {
       ...currentFormData,
       [name]: value,
     }));
+    setErrorMessage('');
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
+    setIsLoading(true);
+    setErrorMessage('');
+
+    const baseSlug = createBaseSlug(formData.businessName);
+    let uniqueSlug;
+
+    try {
+      uniqueSlug = await generateUniqueSlug(baseSlug);
+    } catch (slugError) {
+      setErrorMessage(`Business profile could not be created: ${slugError.message}`);
+      setIsLoading(false);
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+      email: formData.email,
+      password: formData.password,
+    });
+
+    if (error) {
+      const isExistingEmail = error.message.toLowerCase().includes('already');
+      setErrorMessage(
+        isExistingEmail
+          ? 'An account with this email already exists. Please log in.'
+          : `Registration failed: ${error.message}`,
+      );
+      setIsLoading(false);
+      return;
+    }
+
+    const user = data.user;
+
+    if (!user) {
+      setErrorMessage('Registration failed: Supabase did not return a new user.');
+      setIsLoading(false);
+      return;
+    }
+
+    if (Array.isArray(user.identities) && user.identities.length === 0) {
+      setErrorMessage('An account with this email already exists. Please log in.');
+      setIsLoading(false);
+      return;
+    }
+
+    const businessProfile = {
+      owner_id: user.id,
+      business_name: formData.businessName,
+      slug: uniqueSlug,
+      description: '',
+      phone: '',
+      instagram: '',
+      address: '',
+      currency: '₪',
+      notification_email: formData.email,
+    };
+
+    let { error: businessError } = await supabase.from('businesses').insert(businessProfile);
+
+    if (isDuplicateSlugError(businessError)) {
+      const retryBusinessProfile = {
+        ...businessProfile,
+        slug: `${baseSlug}-${Date.now()}`,
+      };
+
+      const retryResult = await supabase.from('businesses').insert(retryBusinessProfile);
+      businessError = retryResult.error;
+    }
+
+    if (businessError) {
+      setErrorMessage(
+        'Account was created, but business profile could not be created. Please contact support.',
+      );
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(false);
     navigate('/dashboard');
   }
 
@@ -94,8 +218,14 @@ function Register() {
             />
           </label>
 
-          <Button type="submit" className="w-full">
-            Create account
+          {errorMessage ? (
+            <p className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {errorMessage}
+            </p>
+          ) : null}
+
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? 'Creating account...' : 'Create account'}
           </Button>
         </form>
 

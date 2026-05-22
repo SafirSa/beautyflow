@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Button from '../../components/ui/Button.jsx';
-import { salon, services as mockServices } from '../../data/mockData.js';
+import { supabase } from '../../lib/supabaseClient.js';
 
 const emptyServiceForm = {
   name: '',
@@ -10,9 +10,62 @@ const emptyServiceForm = {
 };
 
 function Services() {
-  const [services, setServices] = useState(mockServices);
+  const [business, setBusiness] = useState(null);
+  const [services, setServices] = useState([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingServiceId, setEditingServiceId] = useState(null);
   const [formData, setFormData] = useState(emptyServiceForm);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [deletingServiceId, setDeletingServiceId] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const currency = business?.currency || '₪';
+
+  useEffect(() => {
+    async function loadServices() {
+      setIsLoading(true);
+      setErrorMessage('');
+
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !userData.user) {
+        setErrorMessage('Could not load your services. Please log in again.');
+        setIsLoading(false);
+        return;
+      }
+
+      const { data: businessData, error: businessError } = await supabase
+        .from('businesses')
+        .select('*')
+        .eq('owner_id', userData.user.id)
+        .single();
+
+      if (businessError || !businessData) {
+        setErrorMessage('No business profile found. Please complete your setup.');
+        setIsLoading(false);
+        return;
+      }
+
+      const { data: servicesData, error: servicesError } = await supabase
+        .from('services')
+        .select('*')
+        .eq('business_id', businessData.id)
+        .order('created_at', { ascending: true });
+
+      if (servicesError) {
+        setErrorMessage(`Services could not be loaded: ${servicesError.message}`);
+        setIsLoading(false);
+        return;
+      }
+
+      setBusiness(businessData);
+      setServices(servicesData || []);
+      setIsLoading(false);
+    }
+
+    loadServices();
+  }, []);
 
   function handleInputChange(event) {
     const { name, value } = event.target;
@@ -21,25 +74,103 @@ function Services() {
       ...currentFormData,
       [name]: value,
     }));
+    setErrorMessage('');
   }
 
-  function handleAddService(event) {
-    event.preventDefault();
+  function openAddForm() {
+    setEditingServiceId(null);
+    setFormData(emptyServiceForm);
+    setErrorMessage('');
+    setIsFormOpen(true);
+  }
 
-    const newService = {
-      id: `service-${Date.now()}`,
+  function openEditForm(service) {
+    setEditingServiceId(service.id);
+    setFormData({
+      name: service.name || '',
+      description: service.description || '',
+      durationMinutes: String(service.duration_minutes || ''),
+      price: String(service.price || ''),
+    });
+    setErrorMessage('');
+    setIsFormOpen(true);
+  }
+
+  function closeForm() {
+    setIsFormOpen(false);
+    setEditingServiceId(null);
+    setFormData(emptyServiceForm);
+  }
+
+  async function handleSaveService(event) {
+    event.preventDefault();
+    setIsSaving(true);
+    setErrorMessage('');
+
+    const servicePayload = {
       name: formData.name.trim(),
       description: formData.description.trim(),
-      durationMinutes: Number(formData.durationMinutes),
+      duration_minutes: Number(formData.durationMinutes),
       price: Number(formData.price),
     };
 
-    setServices((currentServices) => [...currentServices, newService]);
-    setFormData(emptyServiceForm);
-    setIsFormOpen(false);
+    if (editingServiceId) {
+      const { data, error } = await supabase
+        .from('services')
+        .update(servicePayload)
+        .eq('id', editingServiceId)
+        .select()
+        .single();
+
+      setIsSaving(false);
+
+      if (error) {
+        setErrorMessage(`Service could not be updated: ${error.message}`);
+        return;
+      }
+
+      setServices((currentServices) =>
+        currentServices.map((service) =>
+          service.id === editingServiceId ? data : service,
+        ),
+      );
+      closeForm();
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('services')
+      .insert({
+        ...servicePayload,
+        business_id: business.id,
+      })
+      .select()
+      .single();
+
+    setIsSaving(false);
+
+    if (error) {
+      setErrorMessage(`Service could not be added: ${error.message}`);
+      return;
+    }
+
+    setServices((currentServices) => [...currentServices, data]);
+    closeForm();
   }
 
-  function handleDeleteService(serviceId) {
+  async function handleDeleteService(serviceId) {
+    setDeletingServiceId(serviceId);
+    setErrorMessage('');
+
+    const { error } = await supabase.from('services').delete().eq('id', serviceId);
+
+    setDeletingServiceId(null);
+
+    if (error) {
+      setErrorMessage(`Service could not be deleted: ${error.message}`);
+      return;
+    }
+
     setServices((currentServices) =>
       currentServices.filter((service) => service.id !== serviceId),
     );
@@ -54,10 +185,25 @@ function Services() {
             Manage the treatments clients can request from your booking page.
           </p>
         </div>
-        <Button onClick={() => setIsFormOpen(true)}>Add Service</Button>
+        <Button onClick={openAddForm}>Add Service</Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      {errorMessage ? (
+        <p className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {errorMessage}
+        </p>
+      ) : null}
+
+      {isLoading ? (
+        <div className="rounded-3xl border border-neutral-200 bg-white p-8 text-center text-neutral-600 shadow-sm">
+          Loading services...
+        </div>
+      ) : services.length === 0 ? (
+        <div className="rounded-3xl border border-neutral-200 bg-white p-8 text-center shadow-sm">
+          <p className="font-medium text-neutral-950">No services yet. Add your first service.</p>
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {services.map((service) => (
           <article
             key={service.id}
@@ -73,7 +219,7 @@ function Services() {
                     Duration
                   </p>
                   <p className="mt-1 font-semibold text-neutral-900">
-                    {service.durationMinutes} min
+                    {service.duration_minutes} min
                   </p>
                 </div>
                 <div className="rounded-2xl bg-rose-50 p-4">
@@ -81,7 +227,7 @@ function Services() {
                     Price
                   </p>
                   <p className="mt-1 font-semibold text-neutral-900">
-                    {salon.currency}
+                    {currency}
                     {service.price}
                   </p>
                 </div>
@@ -89,31 +235,42 @@ function Services() {
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-2">
-              <Button variant="secondary">Edit</Button>
-              <Button variant="danger" onClick={() => handleDeleteService(service.id)}>
-                Delete
+              <Button variant="secondary" onClick={() => openEditForm(service)}>
+                Edit
+              </Button>
+              <Button
+                variant="danger"
+                onClick={() => handleDeleteService(service.id)}
+                disabled={deletingServiceId === service.id}
+              >
+                {deletingServiceId === service.id ? 'Deleting...' : 'Delete'}
               </Button>
             </div>
           </article>
         ))}
-      </div>
+        </div>
+      )}
 
       {isFormOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/40 px-4 py-6">
           <form
-            onSubmit={handleAddService}
+            onSubmit={handleSaveService}
             className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-xl font-semibold text-neutral-950">Add service</h3>
+                <h3 className="text-xl font-semibold text-neutral-950">
+                  {editingServiceId ? 'Edit service' : 'Add service'}
+                </h3>
                 <p className="mt-1 text-sm text-neutral-500">
-                  Add a new treatment to your local service list.
+                  {editingServiceId
+                    ? 'Update this treatment in your services list.'
+                    : 'Add a new treatment to your services list.'}
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => setIsFormOpen(false)}
+                onClick={closeForm}
                 className="rounded-full bg-neutral-100 px-3 py-1 text-sm font-medium text-neutral-600 transition hover:bg-neutral-200"
               >
                 Close
@@ -179,15 +336,23 @@ function Services() {
               </div>
             </div>
 
+            {errorMessage ? (
+              <p className="mt-5 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                {errorMessage}
+              </p>
+            ) : null}
+
             <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <Button
                 type="button"
                 variant="secondary"
-                onClick={() => setIsFormOpen(false)}
+                onClick={closeForm}
               >
                 Cancel
               </Button>
-              <Button type="submit">Save Service</Button>
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? 'Saving...' : 'Save Service'}
+              </Button>
             </div>
           </form>
         </div>

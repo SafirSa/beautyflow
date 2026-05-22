@@ -53,7 +53,7 @@ export const clients = [
   {
     id: "client-001",
     name: "Noa Levi",
-    phone: "+972 52-448-2190",
+    phone: "0542680205",
     lastVisit: "2026-05-02",
     status: "regular",
     totalSpent: 1240,

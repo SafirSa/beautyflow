@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import Button from '../../components/ui/Button.jsx';
-import { clients, messageTemplates, salon } from '../../data/mockData.js';
+import { clients, messageTemplates } from '../../data/mockData.js';
 import { createWhatsAppLink } from '../../utils/whatsapp.js';
 
 const templateFallbacks = {
@@ -9,12 +10,12 @@ const templateFallbacks = {
   time: '15:00',
 };
 
-function fillTemplate(content, client) {
+function fillTemplate(content, client, businessName) {
   return content
     .replaceAll('{{clientName}}', client.name)
     .replaceAll('{clientName}', client.name)
-    .replaceAll('{{businessName}}', salon.name)
-    .replaceAll('{businessName}', salon.name)
+    .replaceAll('{{businessName}}', businessName)
+    .replaceAll('{businessName}', businessName)
     .replaceAll('{{serviceName}}', templateFallbacks.serviceName)
     .replaceAll('{serviceName}', templateFallbacks.serviceName)
     .replaceAll('{{date}}', templateFallbacks.date)
@@ -28,6 +29,8 @@ function openWhatsApp(phone, message) {
 }
 
 function Messages() {
+  const { businessProfile } = useOutletContext();
+  const businessName = businessProfile.business_name;
   const [selectedClientId, setSelectedClientId] = useState(clients[0]?.id || '');
   const selectedClient =
     clients.find((client) => client.id === selectedClientId) || clients[0];
@@ -66,7 +69,7 @@ function Messages() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         {messageTemplates.map((template) => {
-          const message = fillTemplate(template.content, selectedClient);
+          const message = fillTemplate(template.content, selectedClient, businessName);
 
           return (
             <article

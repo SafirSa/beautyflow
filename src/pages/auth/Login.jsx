@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Button from '../../components/ui/Button.jsx';
+import { supabase } from '../../lib/supabaseClient.js';
 
 function Login() {
   const navigate = useNavigate();
@@ -8,6 +9,8 @@ function Login() {
     email: '',
     password: '',
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -16,10 +19,26 @@ function Login() {
       ...currentFormData,
       [name]: value,
     }));
+    setErrorMessage('');
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
+    setIsLoading(true);
+    setErrorMessage('');
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: formData.email,
+      password: formData.password,
+    });
+
+    setIsLoading(false);
+
+    if (error) {
+      setErrorMessage(error.message);
+      return;
+    }
+
     navigate('/dashboard');
   }
 
@@ -66,8 +85,14 @@ function Login() {
             />
           </label>
 
-          <Button type="submit" className="w-full">
-            Log in
+          {errorMessage ? (
+            <p className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {errorMessage}
+            </p>
+          ) : null}
+
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? 'Logging in...' : 'Log in'}
           </Button>
         </form>
 

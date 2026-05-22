@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { supabase } from '../../lib/supabaseClient.js';
 import Sidebar from './Sidebar.jsx';
 import Topbar from './Topbar.jsx';
 
@@ -27,8 +28,44 @@ const moreNavigationItems = [
 function DashboardLayout() {
   const { pathname } = useLocation();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const [businessProfile, setBusinessProfile] = useState(null);
+  const [isLoadingBusiness, setIsLoadingBusiness] = useState(true);
+  const [businessError, setBusinessError] = useState('');
   const title = pageTitles[pathname] || 'Dashboard';
   const isMoreActive = moreNavigationItems.some((item) => item.to === pathname);
+
+  useEffect(() => {
+    async function loadBusinessProfile() {
+      setIsLoadingBusiness(true);
+      setBusinessError('');
+
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !userData.user) {
+        setBusinessError('No business profile found. Please complete your setup.');
+        setIsLoadingBusiness(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('businesses')
+        .select('*')
+        .eq('owner_id', userData.user.id)
+        .single();
+
+      if (error || !data) {
+        setBusinessProfile(null);
+        setBusinessError('No business profile found. Please complete your setup.');
+        setIsLoadingBusiness(false);
+        return;
+      }
+
+      setBusinessProfile(data);
+      setIsLoadingBusiness(false);
+    }
+
+    loadBusinessProfile();
+  }, []);
 
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-950">
@@ -46,11 +83,21 @@ function DashboardLayout() {
             </div>
           </div>
 
-          <Topbar title={title} />
+          <Topbar title={title} businessName={businessProfile?.business_name || 'BeautyFlow'} />
 
           <main className="px-3 pb-28 pt-4 sm:px-6 sm:py-6 lg:px-8 lg:pb-6">
             <div className="lg:rounded-2xl lg:border lg:border-neutral-200 lg:bg-white lg:p-6 lg:shadow-sm">
-              <Outlet />
+              {isLoadingBusiness ? (
+                <div className="flex min-h-64 items-center justify-center rounded-3xl bg-white text-neutral-600">
+                  Loading...
+                </div>
+              ) : businessError ? (
+                <div className="rounded-3xl border border-neutral-200 bg-white p-6 text-center shadow-sm">
+                  <p className="font-medium text-neutral-950">{businessError}</p>
+                </div>
+              ) : (
+                <Outlet context={{ businessProfile }} />
+              )}
             </div>
           </main>
         </div>

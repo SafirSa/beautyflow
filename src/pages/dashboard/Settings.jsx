@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import Button from '../../components/ui/Button.jsx';
-import { salon } from '../../data/mockData.js';
+import { supabase } from '../../lib/supabaseClient.js';
 
 const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -11,20 +12,68 @@ const defaultWorkingHours = weekDays.map((day) => ({
 }));
 
 function Settings() {
+  const { businessProfile } = useOutletContext();
   const [formData, setFormData] = useState({
-    name: salon.name,
-    description: salon.description,
-    phone: salon.phone,
-    instagram: salon.instagram,
-    address: salon.address,
-    currency: salon.currency,
-    slug: salon.slug,
+    business_name: businessProfile.business_name || '',
+    description: businessProfile.description || '',
+    phone: businessProfile.phone || '',
+    instagram: businessProfile.instagram || '',
+    address: businessProfile.address || '',
+    currency: businessProfile.currency || '₪',
+    slug: businessProfile.slug || '',
+    notification_email: businessProfile.notification_email || '',
   });
+  const [ownerId, setOwnerId] = useState(businessProfile.owner_id || '');
   const [workingHours, setWorkingHours] = useState(defaultWorkingHours);
+  const [isLoadingBusiness, setIsLoadingBusiness] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const [copyMessage, setCopyMessage] = useState('');
 
   const bookingLink = `/salon/${formData.slug}`;
+
+  useEffect(() => {
+    async function loadBusinessSettings() {
+      setIsLoadingBusiness(true);
+      setErrorMessage('');
+
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !userData.user) {
+        setErrorMessage('Could not load your business settings.');
+        setIsLoadingBusiness(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('businesses')
+        .select('*')
+        .eq('owner_id', userData.user.id)
+        .single();
+
+      if (error || !data) {
+        setErrorMessage('No business profile found. Please complete your setup.');
+        setIsLoadingBusiness(false);
+        return;
+      }
+
+      setOwnerId(userData.user.id);
+      setFormData({
+        business_name: data.business_name || '',
+        description: data.description || '',
+        phone: data.phone || '',
+        instagram: data.instagram || '',
+        address: data.address || '',
+        currency: data.currency || '₪',
+        slug: data.slug || '',
+        notification_email: data.notification_email || '',
+      });
+      setIsLoadingBusiness(false);
+    }
+
+    loadBusinessSettings();
+  }, []);
 
   function handleInputChange(event) {
     const { name, value } = event.target;
@@ -34,6 +83,7 @@ function Settings() {
       [name]: value,
     }));
     setSaveMessage('');
+    setErrorMessage('');
   }
 
   function handleHoursChange(day, field, value) {
@@ -54,9 +104,34 @@ function Settings() {
     }
   }
 
-  function handleSave(event) {
+  async function handleSave(event) {
     event.preventDefault();
-    setSaveMessage('Settings saved locally for demo.');
+    setIsSaving(true);
+    setSaveMessage('');
+    setErrorMessage('');
+
+    const { error } = await supabase
+      .from('businesses')
+      .update({
+        business_name: formData.business_name,
+        description: formData.description,
+        phone: formData.phone,
+        instagram: formData.instagram,
+        address: formData.address,
+        currency: formData.currency,
+        slug: formData.slug,
+        notification_email: formData.notification_email,
+      })
+      .eq('owner_id', ownerId);
+
+    setIsSaving(false);
+
+    if (error) {
+      setErrorMessage(`Settings could not be saved: ${error.message}`);
+      return;
+    }
+
+    setSaveMessage('Settings saved successfully.');
   }
 
   return (
@@ -76,8 +151,8 @@ function Settings() {
             <label className="block">
               <span className="text-sm font-medium text-neutral-700">Business name</span>
               <input
-                name="name"
-                value={formData.name}
+                name="business_name"
+                value={formData.business_name}
                 onChange={handleInputChange}
                 className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
               />
@@ -143,6 +218,18 @@ function Settings() {
                 className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
               />
             </label>
+
+            <label className="block lg:col-span-2">
+              <span className="text-sm font-medium text-neutral-700">Notification email</span>
+              <input
+                type="email"
+                name="notification_email"
+                value={formData.notification_email}
+                onChange={handleInputChange}
+                placeholder="Where should new booking notifications be sent?"
+                className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
+              />
+            </label>
           </div>
         </div>
 
@@ -200,12 +287,24 @@ function Settings() {
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+          {isLoadingBusiness ? (
+            <p className="rounded-xl bg-neutral-100 px-4 py-3 text-sm text-neutral-600">
+              Loading settings...
+            </p>
+          ) : null}
           {saveMessage ? (
             <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
               {saveMessage}
             </p>
           ) : null}
-          <Button type="submit">Save Settings</Button>
+          {errorMessage ? (
+            <p className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {errorMessage}
+            </p>
+          ) : null}
+          <Button type="submit" disabled={isSaving || isLoadingBusiness}>
+            {isSaving ? 'Saving...' : 'Save Settings'}
+          </Button>
         </div>
       </form>
     </section>
