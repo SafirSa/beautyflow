@@ -125,6 +125,7 @@ function Register() {
       notification_email: formData.email,
     };
 
+    let createdBusinessSlug = businessProfile.slug;
     let { error: businessError } = await supabase.from('businesses').insert(businessProfile);
 
     if (isDuplicateSlugError(businessError)) {
@@ -135,6 +136,7 @@ function Register() {
 
       const retryResult = await supabase.from('businesses').insert(retryBusinessProfile);
       businessError = retryResult.error;
+      createdBusinessSlug = retryBusinessProfile.slug;
     }
 
     if (businessError) {
@@ -143,6 +145,19 @@ function Register() {
       );
       setIsLoading(false);
       return;
+    }
+
+    const { error: welcomeEmailError } = await supabase.functions.invoke('send-welcome-email', {
+      body: {
+        to: formData.email,
+        ownerName: formData.ownerName,
+        businessName: formData.businessName,
+        bookingLink: `/salon/${createdBusinessSlug}`,
+      },
+    });
+
+    if (welcomeEmailError) {
+      console.error('Welcome email could not be sent:', welcomeEmailError);
     }
 
     setIsLoading(false);

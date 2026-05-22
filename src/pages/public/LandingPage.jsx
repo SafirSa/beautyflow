@@ -18,6 +18,10 @@ const features = [
     title: 'WhatsApp confirmations and follow-ups',
     description: 'Open ready-to-send WhatsApp messages for confirmations, reminders, and client care.',
   },
+  {
+    title: 'Automatic email notifications',
+    description: 'Get an email when a client requests an appointment, so no new booking slips by.',
+  },
 ];
 
 const steps = [
@@ -32,8 +36,8 @@ const planFeatures = [
   'Booking requests dashboard',
   'Services and prices management',
   'Client list / CRM',
-  'WhatsApp confirmation and follow-up buttons',
-  'Message templates',
+  'WhatsApp buttons with ready messages',
+  'Automatic email notifications',
   'Mobile-friendly dashboard',
 ];
 
@@ -104,9 +108,13 @@ function LandingPage() {
             <h2 className="mt-3 text-3xl font-semibold text-neutral-950 sm:text-4xl">
               Everything your salon needs to take requests without chaos
             </h2>
+            <p className="mt-4 text-base leading-7 text-neutral-600">
+              When a client requests an appointment, BeautyFlow saves the request and sends the
+              salon owner an email notification.
+            </p>
           </div>
 
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {features.map((feature) => (
               <article
                 key={feature.title}
