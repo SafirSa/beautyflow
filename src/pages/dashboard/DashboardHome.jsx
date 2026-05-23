@@ -14,10 +14,6 @@ function formatDate(date) {
   }).format(new Date(date));
 }
 
-function isNeedsFollowUp(status) {
-  return status === 'needs_follow_up' || status === 'needs follow-up';
-}
-
 function isCreatedAfter(record, lastSeenTimestamp) {
   if (!record.created_at) {
     return false;
@@ -156,8 +152,6 @@ function DashboardHome() {
       .filter((booking) => String(booking.booking_date).startsWith(currentMonth))
       .reduce((total, booking) => total + Number(booking.price || 0), 0);
 
-    const clientsNeedingFollowUp = clients.filter((client) => isNeedsFollowUp(client.status));
-
     const upcomingAppointments = approvedBookings
       .filter((booking) => booking.booking_date >= today)
       .sort((firstBooking, secondBooking) => {
@@ -177,7 +171,6 @@ function DashboardHome() {
       todaysAppointments,
       pendingBookings,
       monthlyRevenue,
-      clientsNeedingFollowUp,
       upcomingAppointments,
       pendingPreview,
     };
@@ -321,7 +314,7 @@ function DashboardHome() {
         </div>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
         <StatCard
           label="Today's appointments"
           value={dashboardData.todaysAppointments.length}
@@ -358,11 +351,6 @@ function DashboardHome() {
             helperText="Approved bookings this month"
           />
         </div>
-        <StatCard
-          label="Clients needing follow-up"
-          value={dashboardData.clientsNeedingFollowUp.length}
-          helperText="Marked for follow-up"
-        />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
