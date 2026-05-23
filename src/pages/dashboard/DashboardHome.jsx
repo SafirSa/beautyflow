@@ -18,12 +18,12 @@ function isNeedsFollowUp(status) {
   return status === 'needs_follow_up' || status === 'needs follow-up';
 }
 
-function isClientCreatedAfter(client, lastSeenTimestamp) {
-  if (!client.created_at) {
+function isCreatedAfter(record, lastSeenTimestamp) {
+  if (!record.created_at) {
     return false;
   }
 
-  const createdAt = new Date(client.created_at).getTime();
+  const createdAt = new Date(record.created_at).getTime();
   const lastSeenAt = new Date(lastSeenTimestamp).getTime();
 
   if (Number.isNaN(createdAt) || Number.isNaN(lastSeenAt)) {
@@ -44,6 +44,7 @@ function DashboardHome() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isBookingLinkCopied, setIsBookingLinkCopied] = useState(false);
   const [lastSeenClientsTimestamp, setLastSeenClientsTimestamp] = useState('');
+  const [lastSeenPendingRequestsTimestamp, setLastSeenPendingRequestsTimestamp] = useState('');
 
   const today = getTodayDate();
   const currentMonth = today.slice(0, 7);
@@ -110,6 +111,9 @@ function DashboardHome() {
       setLastSeenClientsTimestamp(
         localStorage.getItem(`beautyflow_clients_last_seen_${businessData.id}`) || '',
       );
+      setLastSeenPendingRequestsTimestamp(
+        localStorage.getItem(`beautyflow_pending_requests_last_seen_${businessData.id}`) || '',
+      );
       setIsLoading(false);
     }
 
@@ -142,6 +146,16 @@ function DashboardHome() {
     }
 
     navigate('/dashboard/clients');
+  }
+
+  function handlePendingRequestsCardClick() {
+    if (business?.id) {
+      const lastSeenAt = new Date().toISOString();
+      localStorage.setItem(`beautyflow_pending_requests_last_seen_${business.id}`, lastSeenAt);
+      setLastSeenPendingRequestsTimestamp(lastSeenAt);
+    }
+
+    navigate('/dashboard/bookings');
   }
 
   const dashboardData = useMemo(() => {
@@ -184,9 +198,16 @@ function DashboardHome() {
   }, [bookings, clients, currentMonth, today]);
 
   const newClients = lastSeenClientsTimestamp
-    ? clients.filter((client) => isClientCreatedAfter(client, lastSeenClientsTimestamp))
+    ? clients.filter((client) => isCreatedAfter(client, lastSeenClientsTimestamp))
     : clients;
   const hasUnseenNewClients = newClients.length > 0;
+
+  const newPendingRequests = lastSeenPendingRequestsTimestamp
+    ? dashboardData.pendingBookings.filter((booking) =>
+        isCreatedAfter(booking, lastSeenPendingRequestsTimestamp),
+      )
+    : dashboardData.pendingBookings;
+  const hasUnseenPendingRequests = newPendingRequests.length > 0;
 
   useEffect(() => {
     console.log('DashboardHome clients count:', clients.length);
@@ -326,11 +347,30 @@ function DashboardHome() {
           value={dashboardData.todaysAppointments.length}
           helperText="Approved for today"
         />
-        <StatCard
-          label="Pending booking requests"
-          value={dashboardData.pendingBookings.length}
-          helperText="Waiting for confirmation"
-        />
+        <button
+          type="button"
+          onClick={handlePendingRequestsCardClick}
+          className={`rounded-2xl border p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-5 ${
+            hasUnseenPendingRequests
+              ? 'border-rose-200 bg-rose-50/80 shadow-rose-100/80 ring-4 ring-rose-100/70'
+              : 'border-neutral-200 bg-white'
+          }`}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-sm font-medium text-neutral-500">Pending booking requests</p>
+            {hasUnseenPendingRequests ? (
+              <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-rose-700 shadow-sm">
+                New
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-2 text-2xl font-semibold text-neutral-950 sm:mt-3 sm:text-3xl">
+            {dashboardData.pendingBookings.length}
+          </p>
+          <p className="mt-1 text-sm text-neutral-500 sm:mt-2">
+            {hasUnseenPendingRequests ? 'New booking request' : 'Waiting for confirmation'}
+          </p>
+        </button>
         <div className="hidden sm:block">
           <StatCard
             label="Monthly revenue"
