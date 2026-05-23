@@ -15,6 +15,10 @@ function formatDate(date) {
   }).format(new Date(date));
 }
 
+function formatBookingTime(time) {
+  return String(time || '').slice(0, 5);
+}
+
 function isCreatedAfter(record, lastSeenTimestamp) {
   if (!record.created_at) {
     return false;
@@ -143,7 +147,7 @@ function DashboardHome() {
   }
 
   function getTodayAppointmentMessage(appointment) {
-    return `Hi ${appointment.client_name}, just confirming your appointment today at ${appointment.booking_time} for ${appointment.service_name}. See you soon!`;
+    return `Hi ${appointment.client_name}, just confirming your appointment today at ${formatBookingTime(appointment.booking_time)} for ${appointment.service_name}. See you soon!`;
   }
 
   const dashboardData = useMemo(() => {
@@ -542,7 +546,7 @@ function DashboardHome() {
                       <p className="mt-1 text-sm text-neutral-600">{appointment.phone}</p>
                     </div>
                     <p className="rounded-full bg-rose-50 px-3 py-1 text-sm font-semibold text-rose-700">
-                      {appointment.booking_time}
+                      {formatBookingTime(appointment.booking_time)}
                     </p>
                   </div>
 
