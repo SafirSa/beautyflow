@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import StatCard from '../../components/ui/StatCard.jsx';
 import { supabase } from '../../lib/supabaseClient.js';
+import { createWhatsAppLink } from '../../utils/whatsapp.js';
 
 function getTodayDate() {
   return new Date().toISOString().slice(0, 10);
@@ -39,6 +40,7 @@ function DashboardHome() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isBookingLinkCopied, setIsBookingLinkCopied] = useState(false);
+  const [isTodayAppointmentsModalOpen, setIsTodayAppointmentsModalOpen] = useState(false);
   const [lastSeenPendingRequestsTimestamp, setLastSeenPendingRequestsTimestamp] = useState('');
 
   const today = getTodayDate();
@@ -138,6 +140,10 @@ function DashboardHome() {
     }
 
     navigate('/dashboard/bookings');
+  }
+
+  function getTodayAppointmentMessage(appointment) {
+    return `Hi ${appointment.client_name}, just confirming your appointment today at ${appointment.booking_time} for ${appointment.service_name}. See you soon!`;
   }
 
   const dashboardData = useMemo(() => {
@@ -315,11 +321,17 @@ function DashboardHome() {
       ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
-        <StatCard
-          label="Today's appointments"
-          value={dashboardData.todaysAppointments.length}
-          helperText="Approved for today"
-        />
+        <button
+          type="button"
+          onClick={() => setIsTodayAppointmentsModalOpen(true)}
+          className="rounded-2xl border border-neutral-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-5"
+        >
+          <p className="text-sm font-medium text-neutral-500">Today's appointments</p>
+          <p className="mt-2 text-2xl font-semibold text-neutral-950 sm:mt-3 sm:text-3xl">
+            {dashboardData.todaysAppointments.length}
+          </p>
+          <p className="mt-1 text-sm text-neutral-500 sm:mt-2">Approved for today</p>
+        </button>
         <button
           type="button"
           onClick={handlePendingRequestsCardClick}
@@ -485,6 +497,101 @@ function DashboardHome() {
               >
                 Share on WhatsApp
               </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isTodayAppointmentsModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-end bg-neutral-950/35 px-4 py-4 backdrop-blur-sm sm:items-center sm:justify-center">
+          <div className="max-h-[90vh] w-full overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl shadow-neutral-950/20 sm:max-w-2xl sm:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-semibold text-neutral-950">Today’s Appointments</h3>
+                <p className="mt-2 text-sm leading-6 text-neutral-500">
+                  Approved visits scheduled for today.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsTodayAppointmentsModalOpen(false)}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-neutral-200 text-xl leading-none text-neutral-500 transition hover:bg-neutral-50 hover:text-neutral-950"
+                aria-label="Close today appointments modal"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              {dashboardData.todaysAppointments.length === 0 ? (
+                <div className="rounded-2xl border border-neutral-100 bg-neutral-50/70 p-5 text-sm text-neutral-500">
+                  No appointments scheduled for today.
+                </div>
+              ) : null}
+
+              {dashboardData.todaysAppointments.map((appointment) => (
+                <article
+                  key={appointment.id}
+                  className="rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="text-lg font-semibold text-neutral-950">
+                        {appointment.client_name}
+                      </p>
+                      <p className="mt-1 text-sm text-neutral-600">{appointment.phone}</p>
+                    </div>
+                    <p className="rounded-full bg-rose-50 px-3 py-1 text-sm font-semibold text-rose-700">
+                      {appointment.booking_time}
+                    </p>
+                  </div>
+
+                  <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+                    <div className="rounded-2xl bg-neutral-50 p-3">
+                      <p className="text-xs font-medium uppercase tracking-[0.12em] text-neutral-400">
+                        Service
+                      </p>
+                      <p className="mt-1 font-medium text-neutral-800">
+                        {appointment.service_name}
+                      </p>
+                    </div>
+                    {appointment.price ? (
+                      <div className="rounded-2xl bg-neutral-50 p-3">
+                        <p className="text-xs font-medium uppercase tracking-[0.12em] text-neutral-400">
+                          Price
+                        </p>
+                        <p className="mt-1 font-medium text-neutral-800">
+                          {currency}
+                          {appointment.price}
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {appointment.notes ? (
+                    <div className="mt-3 rounded-2xl bg-rose-50/70 p-3">
+                      <p className="text-xs font-medium uppercase tracking-[0.12em] text-rose-400">
+                        Notes
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-neutral-700">
+                        {appointment.notes}
+                      </p>
+                    </div>
+                  ) : null}
+
+                  <a
+                    href={createWhatsAppLink(
+                      appointment.phone,
+                      getTodayAppointmentMessage(appointment),
+                    )}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-4 block w-full rounded-xl border border-neutral-200 px-5 py-4 text-center text-sm font-semibold text-neutral-800 transition hover:bg-neutral-50"
+                  >
+                    WhatsApp
+                  </a>
+                </article>
+              ))}
             </div>
           </div>
         </div>
