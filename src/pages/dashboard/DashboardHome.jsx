@@ -189,6 +189,12 @@ function DashboardHome() {
       )
     : dashboardData.pendingBookings;
   const hasUnseenPendingRequests = newPendingRequests.length > 0;
+  const pendingRequestsHelperText =
+    newPendingRequests.length === 0
+      ? 'Waiting for confirmation'
+      : `${newPendingRequests.length} new booking request${
+          newPendingRequests.length === 1 ? '' : 's'
+        }`;
 
   if (isLoading) {
     return (
@@ -342,7 +348,7 @@ function DashboardHome() {
             {dashboardData.pendingBookings.length}
           </p>
           <p className="mt-1 text-sm text-neutral-500 sm:mt-2">
-            {hasUnseenPendingRequests ? 'New booking request' : 'Waiting for confirmation'}
+            {pendingRequestsHelperText}
           </p>
         </button>
         <div className="hidden sm:block">
