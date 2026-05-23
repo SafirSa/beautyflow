@@ -43,6 +43,9 @@ function validateRequiredFields(body: WelcomeEmailRequest) {
 }
 
 Deno.serve(async (req) => {
+  console.log("[send-welcome-email] Function started");
+  console.log("[send-welcome-email] Request method:", req.method);
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -52,6 +55,7 @@ Deno.serve(async (req) => {
   }
 
   const resendApiKey = Deno.env.get("RESEND_API_KEY");
+  console.log("[send-welcome-email] RESEND_API_KEY exists:", Boolean(resendApiKey));
 
   if (!resendApiKey) {
     return jsonResponse(
@@ -64,7 +68,9 @@ Deno.serve(async (req) => {
 
   try {
     body = await req.json();
-  } catch {
+    console.log("[send-welcome-email] Request body received:", body);
+  } catch (error) {
+    console.error("[send-welcome-email] Failed to parse request body:", error);
     return jsonResponse({ success: false, error: "Invalid JSON body" }, 400);
   }
 
@@ -128,27 +134,42 @@ Deno.serve(async (req) => {
     </div>
   `;
 
-  const resendResponse = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${resendApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: "BeautyFlow <onboarding@resend.dev>",
-      to: body.to,
-      subject: "Welcome to BeautyFlow",
-      html,
-    }),
-  });
+  let resendResponse: Response;
+  let resendResponseBody = "";
 
-  if (!resendResponse.ok) {
-    const resendError = await resendResponse.text();
-
+  try {
+    resendResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${resendApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "BeautyFlow <onboarding@resend.dev>",
+        to: body.to,
+        subject: "Welcome to BeautyFlow",
+        html,
+      }),
+    });
+    resendResponseBody = await resendResponse.text();
+    console.log("[send-welcome-email] Resend response status:", resendResponse.status);
+    console.log("[send-welcome-email] Resend response body:", resendResponseBody);
+  } catch (error) {
+    console.error("[send-welcome-email] Resend request failed:", error);
     return jsonResponse(
       {
         success: false,
-        error: resendError || "Failed to send welcome email",
+        error: "Failed to send welcome email",
+      },
+      500,
+    );
+  }
+
+  if (!resendResponse.ok) {
+    return jsonResponse(
+      {
+        success: false,
+        error: resendResponseBody || "Failed to send welcome email",
       },
       500,
     );

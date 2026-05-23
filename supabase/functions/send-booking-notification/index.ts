@@ -51,6 +51,9 @@ function validateRequiredFields(body: BookingNotificationRequest) {
 }
 
 Deno.serve(async (req) => {
+  console.log("[send-booking-notification] Function started");
+  console.log("[send-booking-notification] Request method:", req.method);
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -60,6 +63,7 @@ Deno.serve(async (req) => {
   }
 
   const resendApiKey = Deno.env.get("RESEND_API_KEY");
+  console.log("[send-booking-notification] RESEND_API_KEY exists:", Boolean(resendApiKey));
 
   if (!resendApiKey) {
     return jsonResponse(
@@ -72,7 +76,9 @@ Deno.serve(async (req) => {
 
   try {
     body = await req.json();
-  } catch {
+    console.log("[send-booking-notification] Request body received:", body);
+  } catch (error) {
+    console.error("[send-booking-notification] Failed to parse request body:", error);
     return jsonResponse({ success: false, error: "Invalid JSON body" }, 400);
   }
 
@@ -136,27 +142,42 @@ Deno.serve(async (req) => {
     </div>
   `;
 
-  const resendResponse = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${resendApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: "BeautyFlow <onboarding@resend.dev>",
-      to: body.to,
-      subject: `New booking request for ${body.businessName}`,
-      html,
-    }),
-  });
+  let resendResponse: Response;
+  let resendResponseBody = "";
 
-  if (!resendResponse.ok) {
-    const resendError = await resendResponse.text();
-
+  try {
+    resendResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${resendApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "BeautyFlow <onboarding@resend.dev>",
+        to: body.to,
+        subject: `New booking request for ${body.businessName}`,
+        html,
+      }),
+    });
+    resendResponseBody = await resendResponse.text();
+    console.log("[send-booking-notification] Resend response status:", resendResponse.status);
+    console.log("[send-booking-notification] Resend response body:", resendResponseBody);
+  } catch (error) {
+    console.error("[send-booking-notification] Resend request failed:", error);
     return jsonResponse(
       {
         success: false,
-        error: resendError || "Failed to send notification email",
+        error: "Failed to send notification email",
+      },
+      500,
+    );
+  }
+
+  if (!resendResponse.ok) {
+    return jsonResponse(
+      {
+        success: false,
+        error: resendResponseBody || "Failed to send notification email",
       },
       500,
     );
