@@ -196,10 +196,17 @@ function BookingRequests() {
         </div>
       ) : (
         <div className="grid gap-4">
-          {requests.map((request) => (
+          {requests.map((request) => {
+            const isPending = request.status === 'pending';
+
+            return (
             <article
               key={request.id}
-              className="rounded-3xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-5"
+              className={`rounded-3xl border p-4 shadow-sm transition sm:p-5 ${
+                isPending
+                  ? 'border-rose-200 bg-rose-50/80 shadow-rose-100/80 ring-4 ring-rose-100/60'
+                  : 'border-neutral-200 bg-white'
+              }`}
             >
               <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-start">
                 <div>
@@ -208,6 +215,11 @@ function BookingRequests() {
                       {request.client_name}
                     </h3>
                     <StatusBadge status={request.status}>{request.status}</StatusBadge>
+                    {isPending ? (
+                      <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-rose-700 shadow-sm">
+                        New request
+                      </span>
+                    ) : null}
                   </div>
 
                   <div className="mt-4 grid grid-cols-2 gap-3 text-sm text-neutral-600 sm:grid-cols-2 xl:grid-cols-4">
@@ -276,7 +288,8 @@ function BookingRequests() {
                 </div>
               </div>
             </article>
-          ))}
+            );
+          })}
         </div>
       )}
     </section>

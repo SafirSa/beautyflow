@@ -43,7 +43,6 @@ function DashboardHome() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isBookingLinkCopied, setIsBookingLinkCopied] = useState(false);
-  const [lastSeenClientsTimestamp, setLastSeenClientsTimestamp] = useState('');
   const [lastSeenPendingRequestsTimestamp, setLastSeenPendingRequestsTimestamp] = useState('');
 
   const today = getTodayDate();
@@ -108,9 +107,6 @@ function DashboardHome() {
       setBookings(bookingsResult.data || []);
       setClients(clientsResult.data || []);
       setServices(servicesResult.data || []);
-      setLastSeenClientsTimestamp(
-        localStorage.getItem(`beautyflow_clients_last_seen_${businessData.id}`) || '',
-      );
       setLastSeenPendingRequestsTimestamp(
         localStorage.getItem(`beautyflow_pending_requests_last_seen_${businessData.id}`) || '',
       );
@@ -136,16 +132,6 @@ function DashboardHome() {
 
     const message = `Book your appointment with ${businessName} here: ${bookingLink}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noreferrer');
-  }
-
-  function handleClientsCardClick() {
-    if (business?.id) {
-      const lastSeenAt = new Date().toISOString();
-      localStorage.setItem(`beautyflow_clients_last_seen_${business.id}`, lastSeenAt);
-      setLastSeenClientsTimestamp(lastSeenAt);
-    }
-
-    navigate('/dashboard/clients');
   }
 
   function handlePendingRequestsCardClick() {
@@ -197,24 +183,12 @@ function DashboardHome() {
     };
   }, [bookings, clients, currentMonth, today]);
 
-  const newClients = lastSeenClientsTimestamp
-    ? clients.filter((client) => isCreatedAfter(client, lastSeenClientsTimestamp))
-    : clients;
-  const hasUnseenNewClients = newClients.length > 0;
-
   const newPendingRequests = lastSeenPendingRequestsTimestamp
     ? dashboardData.pendingBookings.filter((booking) =>
         isCreatedAfter(booking, lastSeenPendingRequestsTimestamp),
       )
     : dashboardData.pendingBookings;
   const hasUnseenPendingRequests = newPendingRequests.length > 0;
-
-  useEffect(() => {
-    console.log('DashboardHome clients count:', clients.length);
-    console.log('DashboardHome lastSeenTimestamp:', lastSeenClientsTimestamp);
-    console.log('DashboardHome newClientsCount:', newClients.length);
-    console.log('DashboardHome isNewClientAlertActive:', hasUnseenNewClients);
-  }, [clients.length, hasUnseenNewClients, lastSeenClientsTimestamp, newClients.length]);
 
   if (isLoading) {
     return (
@@ -378,34 +352,11 @@ function DashboardHome() {
             helperText="Approved bookings this month"
           />
         </div>
-        <button
-          type="button"
-          onClick={handleClientsCardClick}
-          className={`rounded-2xl border p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-5 ${
-            hasUnseenNewClients
-              ? 'border-rose-200 bg-rose-50/80 shadow-rose-100/80 ring-4 ring-rose-100/70'
-              : 'border-neutral-200 bg-white'
-          }`}
-        >
-          <div className="flex items-start justify-between gap-3">
-            <p className="text-sm font-medium text-neutral-500">
-              {hasUnseenNewClients ? 'New clients' : 'Clients needing follow-up'}
-            </p>
-            {hasUnseenNewClients ? (
-              <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-rose-700 shadow-sm">
-                New
-              </span>
-            ) : null}
-          </div>
-          <p className="mt-2 text-2xl font-semibold text-neutral-950 sm:mt-3 sm:text-3xl">
-            {hasUnseenNewClients
-              ? newClients.length
-              : dashboardData.clientsNeedingFollowUp.length}
-          </p>
-          <p className="mt-1 text-sm text-neutral-500 sm:mt-2">
-            {hasUnseenNewClients ? 'New client added' : 'Marked for follow-up'}
-          </p>
-        </button>
+        <StatCard
+          label="Clients needing follow-up"
+          value={dashboardData.clientsNeedingFollowUp.length}
+          helperText="Marked for follow-up"
+        />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
