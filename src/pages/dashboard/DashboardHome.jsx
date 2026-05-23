@@ -18,39 +18,19 @@ function isNeedsFollowUp(status) {
   return status === 'needs_follow_up' || status === 'needs follow-up';
 }
 
-function isRecentlyCreatedClient(client) {
+function isClientCreatedAfter(client, lastSeenTimestamp) {
   if (!client.created_at) {
     return false;
   }
 
   const createdAt = new Date(client.created_at).getTime();
+  const lastSeenAt = new Date(lastSeenTimestamp).getTime();
 
-  if (Number.isNaN(createdAt)) {
+  if (Number.isNaN(createdAt) || Number.isNaN(lastSeenAt)) {
     return false;
   }
 
-  const sevenDaysInMilliseconds = 7 * 24 * 60 * 60 * 1000;
-
-  return Date.now() - createdAt <= sevenDaysInMilliseconds;
-}
-
-function isClientNewerThanSeenAlert(client, seenAt) {
-  if (!seenAt) {
-    return true;
-  }
-
-  if (!client.created_at) {
-    return false;
-  }
-
-  const createdAt = new Date(client.created_at).getTime();
-  const seenAtTime = new Date(seenAt).getTime();
-
-  if (Number.isNaN(createdAt) || Number.isNaN(seenAtTime)) {
-    return false;
-  }
-
-  return createdAt > seenAtTime;
+  return createdAt > lastSeenAt;
 }
 
 function DashboardHome() {
@@ -63,7 +43,7 @@ function DashboardHome() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isBookingLinkCopied, setIsBookingLinkCopied] = useState(false);
-  const [seenNewClientsAt, setSeenNewClientsAt] = useState('');
+  const [lastSeenClientsTimestamp, setLastSeenClientsTimestamp] = useState('');
 
   const today = getTodayDate();
   const currentMonth = today.slice(0, 7);
@@ -127,7 +107,9 @@ function DashboardHome() {
       setBookings(bookingsResult.data || []);
       setClients(clientsResult.data || []);
       setServices(servicesResult.data || []);
-      setSeenNewClientsAt(localStorage.getItem(`beautyflow_seen_clients_${businessData.id}`) || '');
+      setLastSeenClientsTimestamp(
+        localStorage.getItem(`beautyflow_clients_last_seen_${businessData.id}`) || '',
+      );
       setIsLoading(false);
     }
 
@@ -154,9 +136,9 @@ function DashboardHome() {
 
   function handleClientsCardClick() {
     if (business?.id) {
-      const seenAt = new Date().toISOString();
-      localStorage.setItem(`beautyflow_seen_clients_${business.id}`, seenAt);
-      setSeenNewClientsAt(seenAt);
+      const lastSeenAt = new Date().toISOString();
+      localStorage.setItem(`beautyflow_clients_last_seen_${business.id}`, lastSeenAt);
+      setLastSeenClientsTimestamp(lastSeenAt);
     }
 
     navigate('/dashboard/clients');
@@ -175,9 +157,6 @@ function DashboardHome() {
       .reduce((total, booking) => total + Number(booking.price || 0), 0);
 
     const clientsNeedingFollowUp = clients.filter((client) => isNeedsFollowUp(client.status));
-    const newClients = clients.filter(
-      (client) => client.status === 'new' || isRecentlyCreatedClient(client),
-    );
 
     const upcomingAppointments = approvedBookings
       .filter((booking) => booking.booking_date >= today)
@@ -199,16 +178,22 @@ function DashboardHome() {
       pendingBookings,
       monthlyRevenue,
       clientsNeedingFollowUp,
-      newClients,
       upcomingAppointments,
       pendingPreview,
     };
   }, [bookings, clients, currentMonth, today]);
 
-  const unseenNewClients = dashboardData.newClients.filter((client) =>
-    isClientNewerThanSeenAlert(client, seenNewClientsAt),
-  );
-  const hasUnseenNewClients = unseenNewClients.length > 0;
+  const newClients = lastSeenClientsTimestamp
+    ? clients.filter((client) => isClientCreatedAfter(client, lastSeenClientsTimestamp))
+    : clients;
+  const hasUnseenNewClients = newClients.length > 0;
+
+  useEffect(() => {
+    console.log('DashboardHome clients count:', clients.length);
+    console.log('DashboardHome lastSeenTimestamp:', lastSeenClientsTimestamp);
+    console.log('DashboardHome newClientsCount:', newClients.length);
+    console.log('DashboardHome isNewClientAlertActive:', hasUnseenNewClients);
+  }, [clients.length, hasUnseenNewClients, lastSeenClientsTimestamp, newClients.length]);
 
   if (isLoading) {
     return (
@@ -374,7 +359,7 @@ function DashboardHome() {
           </div>
           <p className="mt-2 text-2xl font-semibold text-neutral-950 sm:mt-3 sm:text-3xl">
             {hasUnseenNewClients
-              ? unseenNewClients.length
+              ? newClients.length
               : dashboardData.clientsNeedingFollowUp.length}
           </p>
           <p className="mt-1 text-sm text-neutral-500 sm:mt-2">
