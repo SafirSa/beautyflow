@@ -31,7 +31,7 @@ function Settings() {
   const [errorMessage, setErrorMessage] = useState('');
   const [copyMessage, setCopyMessage] = useState('');
 
-  const bookingLink = `/salon/${formData.slug}`;
+  const bookingLink = formData.slug ? `${window.location.origin}/salon/${formData.slug}` : '';
 
   useEffect(() => {
     async function loadBusinessSettings() {
