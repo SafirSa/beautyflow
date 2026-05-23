@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import StatCard from '../../components/ui/StatCard.jsx';
 import { supabase } from '../../lib/supabaseClient.js';
 
@@ -18,7 +18,43 @@ function isNeedsFollowUp(status) {
   return status === 'needs_follow_up' || status === 'needs follow-up';
 }
 
+function isRecentlyCreatedClient(client) {
+  if (!client.created_at) {
+    return false;
+  }
+
+  const createdAt = new Date(client.created_at).getTime();
+
+  if (Number.isNaN(createdAt)) {
+    return false;
+  }
+
+  const sevenDaysInMilliseconds = 7 * 24 * 60 * 60 * 1000;
+
+  return Date.now() - createdAt <= sevenDaysInMilliseconds;
+}
+
+function isClientNewerThanSeenAlert(client, seenAt) {
+  if (!seenAt) {
+    return true;
+  }
+
+  if (!client.created_at) {
+    return false;
+  }
+
+  const createdAt = new Date(client.created_at).getTime();
+  const seenAtTime = new Date(seenAt).getTime();
+
+  if (Number.isNaN(createdAt) || Number.isNaN(seenAtTime)) {
+    return false;
+  }
+
+  return createdAt > seenAtTime;
+}
+
 function DashboardHome() {
+  const navigate = useNavigate();
   const [business, setBusiness] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [clients, setClients] = useState([]);
@@ -27,6 +63,7 @@ function DashboardHome() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isBookingLinkCopied, setIsBookingLinkCopied] = useState(false);
+  const [seenNewClientsAt, setSeenNewClientsAt] = useState('');
 
   const today = getTodayDate();
   const currentMonth = today.slice(0, 7);
@@ -90,6 +127,7 @@ function DashboardHome() {
       setBookings(bookingsResult.data || []);
       setClients(clientsResult.data || []);
       setServices(servicesResult.data || []);
+      setSeenNewClientsAt(localStorage.getItem(`beautyflow_seen_clients_${businessData.id}`) || '');
       setIsLoading(false);
     }
 
@@ -114,6 +152,16 @@ function DashboardHome() {
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noreferrer');
   }
 
+  function handleClientsCardClick() {
+    if (business?.id) {
+      const seenAt = new Date().toISOString();
+      localStorage.setItem(`beautyflow_seen_clients_${business.id}`, seenAt);
+      setSeenNewClientsAt(seenAt);
+    }
+
+    navigate('/dashboard/clients');
+  }
+
   const dashboardData = useMemo(() => {
     const approvedBookings = bookings.filter((booking) => booking.status === 'approved');
     const pendingBookings = bookings.filter((booking) => booking.status === 'pending');
@@ -127,6 +175,9 @@ function DashboardHome() {
       .reduce((total, booking) => total + Number(booking.price || 0), 0);
 
     const clientsNeedingFollowUp = clients.filter((client) => isNeedsFollowUp(client.status));
+    const newClients = clients.filter(
+      (client) => client.status === 'new' || isRecentlyCreatedClient(client),
+    );
 
     const upcomingAppointments = approvedBookings
       .filter((booking) => booking.booking_date >= today)
@@ -148,10 +199,16 @@ function DashboardHome() {
       pendingBookings,
       monthlyRevenue,
       clientsNeedingFollowUp,
+      newClients,
       upcomingAppointments,
       pendingPreview,
     };
   }, [bookings, clients, currentMonth, today]);
+
+  const unseenNewClients = dashboardData.newClients.filter((client) =>
+    isClientNewerThanSeenAlert(client, seenNewClientsAt),
+  );
+  const hasUnseenNewClients = unseenNewClients.length > 0;
 
   if (isLoading) {
     return (
@@ -296,11 +353,34 @@ function DashboardHome() {
             helperText="Approved bookings this month"
           />
         </div>
-        <StatCard
-          label="Clients needing follow-up"
-          value={dashboardData.clientsNeedingFollowUp.length}
-          helperText="Marked for follow-up"
-        />
+        <button
+          type="button"
+          onClick={handleClientsCardClick}
+          className={`rounded-2xl border p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-5 ${
+            hasUnseenNewClients
+              ? 'border-rose-200 bg-rose-50/80 shadow-rose-100/80 ring-4 ring-rose-100/70'
+              : 'border-neutral-200 bg-white'
+          }`}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-sm font-medium text-neutral-500">
+              {hasUnseenNewClients ? 'New clients' : 'Clients needing follow-up'}
+            </p>
+            {hasUnseenNewClients ? (
+              <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-rose-700 shadow-sm">
+                New
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-2 text-2xl font-semibold text-neutral-950 sm:mt-3 sm:text-3xl">
+            {hasUnseenNewClients
+              ? unseenNewClients.length
+              : dashboardData.clientsNeedingFollowUp.length}
+          </p>
+          <p className="mt-1 text-sm text-neutral-500 sm:mt-2">
+            {hasUnseenNewClients ? 'New client added' : 'Marked for follow-up'}
+          </p>
+        </button>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
