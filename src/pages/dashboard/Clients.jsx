@@ -4,7 +4,7 @@ import StatusBadge from '../../components/ui/StatusBadge.jsx';
 import { supabase } from '../../lib/supabaseClient.js';
 import { createWhatsAppLink } from '../../utils/whatsapp.js';
 
-const statusFilters = ['All', 'New', 'Active', 'Needs follow-up', 'Lost'];
+const statusFilters = ['All', 'New'];
 
 const emptyClientForm = {
   name: '',
