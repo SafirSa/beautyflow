@@ -37,6 +37,8 @@ function BookingRequests() {
   const [updatingRequestId, setUpdatingRequestId] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [statusFilter, setStatusFilter] = useState('Pending');
+  const [requestToDelete, setRequestToDelete] = useState(null);
+  const [isDeletingRequest, setIsDeletingRequest] = useState(false);
 
   const businessName = business?.business_name || 'your salon';
   const filteredRequests =
@@ -163,6 +165,29 @@ function BookingRequests() {
     );
   }
 
+  async function handleDeleteRequest() {
+    if (!requestToDelete) {
+      return;
+    }
+
+    setIsDeletingRequest(true);
+    setErrorMessage('');
+
+    const { error } = await supabase.from('bookings').delete().eq('id', requestToDelete.id);
+
+    setIsDeletingRequest(false);
+
+    if (error) {
+      setErrorMessage(`Booking request could not be deleted: ${error.message}`);
+      return;
+    }
+
+    setRequests((currentRequests) =>
+      currentRequests.filter((request) => request.id !== requestToDelete.id),
+    );
+    setRequestToDelete(null);
+  }
+
   function getWhatsAppMessage(request) {
     if (request.status === 'approved') {
       return `Hi ${request.client_name}, your appointment for ${request.service_name} at ${businessName} on ${formatDate(request.booking_date)} at ${request.booking_time} is confirmed. See you soon!`;
@@ -232,13 +257,21 @@ function BookingRequests() {
             return (
             <article
               key={request.id}
-              className={`rounded-3xl border p-4 shadow-sm transition sm:p-5 ${
+              className={`relative rounded-3xl border p-4 pr-14 shadow-sm transition sm:p-5 sm:pr-14 ${
                 isPending
                   ? 'border-rose-200 bg-rose-50/80 shadow-rose-100/80 ring-4 ring-rose-100/60'
                   : 'border-neutral-200 bg-white'
               }`}
             >
-              <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-start">
+              <button
+                type="button"
+                onClick={() => setRequestToDelete(request)}
+                className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 bg-white/90 text-xl leading-none text-neutral-400 shadow-sm transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+                aria-label="Delete booking request"
+              >
+                ×
+              </button>
+              <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-stretch">
                 <div>
                   <div className="flex flex-wrap items-center gap-3">
                     <h3 className="text-lg font-semibold text-neutral-950">
@@ -291,7 +324,7 @@ function BookingRequests() {
                   ) : null}
                 </div>
 
-                <div className="flex flex-col gap-2 sm:flex-row lg:w-72 lg:flex-col">
+                <div className="flex flex-col gap-2 sm:flex-row lg:w-72 lg:flex-col lg:self-end">
                   <Button
                     className="w-full"
                     disabled={updatingRequestId === request.id}
@@ -322,6 +355,51 @@ function BookingRequests() {
           })}
         </div>
       )}
+
+      {requestToDelete ? (
+        <div className="fixed inset-0 z-50 flex items-end bg-neutral-950/40 px-4 py-4 backdrop-blur-sm sm:items-center sm:justify-center">
+          <div className="w-full rounded-3xl bg-white p-5 shadow-2xl shadow-neutral-950/20 sm:max-w-md sm:p-6">
+            <div>
+              <p className="text-sm font-medium uppercase tracking-[0.14em] text-rose-500">
+                Confirm delete
+              </p>
+              <h3 className="mt-2 text-2xl font-semibold text-neutral-950">
+                Delete booking request?
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-neutral-500">
+                This action cannot be undone.
+              </p>
+            </div>
+
+            <div className="mt-5 rounded-2xl bg-rose-50/70 p-4 text-sm text-neutral-700">
+              <p className="font-semibold text-neutral-950">{requestToDelete.client_name}</p>
+              <p className="mt-1">
+                {requestToDelete.service_name} on {formatDate(requestToDelete.booking_date)} at{' '}
+                {requestToDelete.booking_time}
+              </p>
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setRequestToDelete(null)}
+                disabled={isDeletingRequest}
+                className="w-full rounded-xl border border-neutral-200 px-5 py-4 text-sm font-semibold text-neutral-800 transition hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteRequest}
+                disabled={isDeletingRequest}
+                className="w-full rounded-xl bg-rose-700 px-5 py-4 text-sm font-semibold text-white transition hover:bg-rose-800 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {isDeletingRequest ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
