@@ -22,6 +22,7 @@ function SalonBookingPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [submittedBooking, setSubmittedBooking] = useState(null);
 
   const selectedService = services.find((service) => service.id === selectedServiceId);
   const currency = business?.currency || '₪';
@@ -73,12 +74,14 @@ function SalonBookingPage() {
     }));
     setError('');
     setIsSubmitted(false);
+    setSubmittedBooking(null);
   }
 
   function handleServiceSelect(serviceId) {
     setSelectedServiceId(serviceId);
     setError('');
     setIsSubmitted(false);
+    setSubmittedBooking(null);
   }
 
   async function handleSubmit(event) {
@@ -103,6 +106,14 @@ function SalonBookingPage() {
     setIsSubmitting(true);
     setError('');
     setIsSubmitted(false);
+
+    const bookingSnapshot = {
+      serviceName: selectedService.name,
+      clientName: formData.name,
+      phone: formData.phone,
+      date: formData.date,
+      time: formData.time,
+    };
 
     const { error: bookingError } = await supabase.from('bookings').insert({
       business_id: business.id,
@@ -148,7 +159,22 @@ function SalonBookingPage() {
 
     setIsSubmitting(false);
     setIsReviewModalOpen(false);
+    setSubmittedBooking(bookingSnapshot);
     setIsSubmitted(true);
+  }
+
+  function handleBackToBookingPage() {
+    setSelectedServiceId('');
+    setFormData({
+      name: '',
+      phone: '',
+      date: '',
+      time: '',
+      notes: '',
+    });
+    setError('');
+    setIsSubmitted(false);
+    setSubmittedBooking(null);
   }
 
   if (isLoading) {
@@ -262,6 +288,66 @@ function SalonBookingPage() {
             </div>
           </div>
 
+          {isSubmitted && submittedBooking ? (
+            <div className="rounded-3xl border border-emerald-100 bg-white p-5 shadow-lg shadow-emerald-100/60 sm:p-6">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-2xl font-semibold text-emerald-700">
+                ✓
+              </div>
+              <h2 className="mt-5 text-2xl font-semibold text-neutral-950">
+                Request sent successfully
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-neutral-500">
+                The salon will confirm your appointment by WhatsApp.
+              </p>
+
+              <div className="mt-5 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4">
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="text-neutral-500">Service</span>
+                    <span className="text-right font-semibold text-neutral-950">
+                      {submittedBooking.serviceName}
+                    </span>
+                  </div>
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="text-neutral-500">Date</span>
+                    <span className="text-right font-medium text-neutral-800">
+                      {submittedBooking.date}
+                    </span>
+                  </div>
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="text-neutral-500">Time</span>
+                    <span className="text-right font-medium text-neutral-800">
+                      {submittedBooking.time}
+                    </span>
+                  </div>
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="text-neutral-500">Client name</span>
+                    <span className="text-right font-medium text-neutral-800">
+                      {submittedBooking.clientName}
+                    </span>
+                  </div>
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="text-neutral-500">Phone</span>
+                    <span className="text-right font-medium text-neutral-800">
+                      {submittedBooking.phone}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <p className="mt-5 rounded-2xl bg-rose-50/70 px-4 py-3 text-sm leading-6 text-neutral-700">
+                Please keep your phone available for confirmation.
+              </p>
+
+              <button
+                type="button"
+                onClick={handleBackToBookingPage}
+                className="mt-6 w-full rounded-xl bg-neutral-950 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-neutral-800"
+              >
+                Back to booking page
+              </button>
+            </div>
+          ) : (
           <form
             onSubmit={handleSubmit}
             className="rounded-3xl border border-neutral-100 bg-white p-5 shadow-lg shadow-rose-100/60 sm:p-6"
@@ -345,12 +431,6 @@ function SalonBookingPage() {
               <p className="mt-5 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>
             ) : null}
 
-            {isSubmitted ? (
-              <p className="mt-5 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                Your appointment request was sent. The salon will confirm by WhatsApp.
-              </p>
-            ) : null}
-
             <button
               type="submit"
               disabled={isSubmitting}
@@ -359,6 +439,7 @@ function SalonBookingPage() {
               Request Appointment
             </button>
           </form>
+          )}
         </div>
       </section>
 
