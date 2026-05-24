@@ -150,6 +150,7 @@ function Settings() {
           <div className="mt-5 grid gap-4 lg:grid-cols-2">
             <label className="block">
               <span className="text-sm font-medium text-neutral-700">Business name</span>
+              <p className="mt-1 text-xs text-neutral-500">This is shown on your booking page.</p>
               <input
                 name="business_name"
                 value={formData.business_name}
@@ -181,6 +182,9 @@ function Settings() {
 
             <label className="block">
               <span className="text-sm font-medium text-neutral-700">Instagram</span>
+              <p className="mt-1 text-xs text-neutral-500">
+                Optional. Add your salon Instagram profile link.
+              </p>
               <input
                 name="instagram"
                 value={formData.instagram}
@@ -191,6 +195,9 @@ function Settings() {
 
             <label className="block">
               <span className="text-sm font-medium text-neutral-700">Address</span>
+              <p className="mt-1 text-xs text-neutral-500">
+                Optional. Shown on the public booking page.
+              </p>
               <input
                 name="address"
                 value={formData.address}
@@ -221,6 +228,9 @@ function Settings() {
 
             <label className="block lg:col-span-2">
               <span className="text-sm font-medium text-neutral-700">Notification email</span>
+              <p className="mt-1 text-xs text-neutral-500">
+                New booking request emails will be sent to this address.
+              </p>
               <input
                 type="email"
                 name="notification_email"
@@ -235,13 +245,24 @@ function Settings() {
 
         <div className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
           <h3 className="text-lg font-semibold text-neutral-950">Booking Page Link</h3>
-          <div className="mt-4 flex flex-col gap-3 rounded-2xl bg-rose-50/70 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="break-all text-sm font-medium text-neutral-800">{bookingLink}</p>
-            <div className="flex items-center gap-3">
+          <p className="mt-2 text-sm text-neutral-500">
+            Share this link with clients so they can request appointments.
+          </p>
+          <div className="mt-4 rounded-2xl bg-rose-50/70 p-4">
+            <p className="break-all text-sm font-semibold text-neutral-900">{bookingLink}</p>
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
               {copyMessage ? <span className="text-sm text-rose-700">{copyMessage}</span> : null}
               <Button type="button" variant="secondary" onClick={handleCopyLink}>
                 Copy Link
               </Button>
+              <a
+                href={bookingLink}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-xl bg-neutral-950 px-4 py-3 text-center text-sm font-medium text-white transition hover:bg-neutral-800 sm:py-2"
+              >
+                View Booking Page
+              </a>
             </div>
           </div>
         </div>
@@ -293,7 +314,7 @@ function Settings() {
             </p>
           ) : null}
           {saveMessage ? (
-            <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            <p className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 shadow-sm">
               {saveMessage}
             </p>
           ) : null}
