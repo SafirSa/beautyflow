@@ -4,6 +4,8 @@ import StatusBadge from '../../components/ui/StatusBadge.jsx';
 import { supabase } from '../../lib/supabaseClient.js';
 import { createWhatsAppLink } from '../../utils/whatsapp.js';
 
+const statusFilters = ['All', 'Pending', 'Approved', 'Rejected'];
+
 function formatDate(date) {
   return new Intl.DateTimeFormat('en', {
     month: 'short',
@@ -34,8 +36,15 @@ function BookingRequests() {
   const [isLoading, setIsLoading] = useState(true);
   const [updatingRequestId, setUpdatingRequestId] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [statusFilter, setStatusFilter] = useState('Pending');
 
   const businessName = business?.business_name || 'your salon';
+  const filteredRequests =
+    statusFilter === 'All'
+      ? requests
+      : requests.filter((request) => request.status === statusFilter.toLowerCase());
+  const emptyStateLabel =
+    statusFilter === 'All' ? 'booking requests' : `${statusFilter.toLowerCase()} bookings`;
 
   useEffect(() => {
     async function loadBookings() {
@@ -186,6 +195,23 @@ function BookingRequests() {
         </p>
       ) : null}
 
+      <div className="flex flex-wrap gap-2 rounded-3xl border border-neutral-200 bg-white p-3 shadow-sm">
+        {statusFilters.map((filter) => (
+          <button
+            key={filter}
+            type="button"
+            onClick={() => setStatusFilter(filter)}
+            className={`flex-1 rounded-2xl px-4 py-3 text-sm font-semibold transition sm:flex-none ${
+              statusFilter === filter
+                ? 'bg-neutral-950 text-white shadow-sm'
+                : 'bg-neutral-50 text-neutral-600 hover:bg-rose-50 hover:text-rose-700'
+            }`}
+          >
+            {filter}
+          </button>
+        ))}
+      </div>
+
       {isLoading ? (
         <div className="rounded-3xl border border-neutral-200 bg-white p-8 text-center text-neutral-600 shadow-sm">
           Loading booking requests...
@@ -194,9 +220,13 @@ function BookingRequests() {
         <div className="rounded-3xl border border-neutral-200 bg-white p-8 text-center shadow-sm">
           <p className="font-medium text-neutral-950">No booking requests yet.</p>
         </div>
+      ) : filteredRequests.length === 0 ? (
+        <div className="rounded-3xl border border-neutral-200 bg-white p-8 text-center shadow-sm">
+          <p className="font-medium text-neutral-950">No {emptyStateLabel} yet.</p>
+        </div>
       ) : (
         <div className="grid gap-4">
-          {requests.map((request) => {
+          {filteredRequests.map((request) => {
             const isPending = request.status === 'pending';
 
             return (
