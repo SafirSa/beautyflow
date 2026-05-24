@@ -14,6 +14,10 @@ function formatDate(date) {
   }).format(new Date(date));
 }
 
+function formatBookingTime(time) {
+  return String(time || '').slice(0, 5);
+}
+
 function mergeClientNotes(existingNotes, bookingNotes) {
   if (!bookingNotes) {
     return existingNotes || '';
@@ -189,15 +193,17 @@ function BookingRequests() {
   }
 
   function getWhatsAppMessage(request) {
+    const bookingTime = formatBookingTime(request.booking_time);
+
     if (request.status === 'approved') {
-      return `Hi ${request.client_name}, your appointment for ${request.service_name} at ${businessName} on ${formatDate(request.booking_date)} at ${request.booking_time} is confirmed. See you soon!`;
+      return `Hi ${request.client_name}, your appointment for ${request.service_name} at ${businessName} on ${formatDate(request.booking_date)} at ${bookingTime} is confirmed. See you soon!`;
     }
 
     if (request.status === 'rejected') {
       return `Hi ${request.client_name}, unfortunately this time is not available for your ${request.service_name} appointment. Would you like to choose another time?`;
     }
 
-    return `Hi ${request.client_name}, I received your appointment request for ${request.service_name} on ${formatDate(request.booking_date)} at ${request.booking_time}. I’ll confirm availability soon.`;
+    return `Hi ${request.client_name}, I received your appointment request for ${request.service_name} on ${formatDate(request.booking_date)} at ${bookingTime}. I’ll confirm availability soon.`;
   }
 
   return (
@@ -308,7 +314,9 @@ function BookingRequests() {
                       <p className="hidden text-xs font-medium uppercase tracking-[0.12em] text-neutral-400 sm:block">
                         Time
                       </p>
-                      <p className="mt-1 text-neutral-800">{request.booking_time}</p>
+                      <p className="mt-1 text-neutral-800">
+                        {formatBookingTime(request.booking_time)}
+                      </p>
                     </div>
                   </div>
 
@@ -375,7 +383,7 @@ function BookingRequests() {
               <p className="font-semibold text-neutral-950">{requestToDelete.client_name}</p>
               <p className="mt-1">
                 {requestToDelete.service_name} on {formatDate(requestToDelete.booking_date)} at{' '}
-                {requestToDelete.booking_time}
+                {formatBookingTime(requestToDelete.booking_time)}
               </p>
             </div>
 
