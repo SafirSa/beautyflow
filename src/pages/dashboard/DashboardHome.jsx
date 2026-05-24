@@ -254,7 +254,8 @@ function DashboardHome() {
         )}
       </div>
 
-      <div className="rounded-3xl border border-rose-100 bg-white p-5 shadow-sm shadow-rose-100/60 sm:p-6">
+      {!hasServices ? (
+        <div className="rounded-3xl border border-rose-100 bg-white p-5 shadow-sm shadow-rose-100/60 sm:p-6">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.14em] text-rose-500">
@@ -346,6 +347,7 @@ function DashboardHome() {
             </div>
           </div>
         </div>
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
         <button
