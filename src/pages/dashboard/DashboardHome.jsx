@@ -745,14 +745,6 @@ function DashboardHome() {
               </div>
               <div className="rounded-2xl bg-neutral-50 p-4">
                 <p className="text-xs font-medium uppercase tracking-[0.12em] text-neutral-400">
-                  Status
-                </p>
-                <p className="mt-1 font-semibold capitalize text-neutral-950">
-                  {selectedCalendarAppointment.status}
-                </p>
-              </div>
-              <div className="rounded-2xl bg-neutral-50 p-4">
-                <p className="text-xs font-medium uppercase tracking-[0.12em] text-neutral-400">
                   Date
                 </p>
                 <p className="mt-1 font-semibold text-neutral-950">
