@@ -228,7 +228,7 @@ function SalonBookingPage() {
               </div>
             </div>
           </div>
-``        </div>
+````        </div>
       </section>
 
       <section className="px-4 pb-12 sm:px-6 lg:px-8">

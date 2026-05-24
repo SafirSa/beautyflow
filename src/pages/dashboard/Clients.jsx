@@ -56,6 +56,7 @@ function Clients() {
   const [isSaving, setIsSaving] = useState(false);
   const [deletingClientId, setDeletingClientId] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [selectedClient, setSelectedClient] = useState(null);
 
   const businessName = business?.business_name || 'your salon';
   const currency = business?.currency || '₪';
@@ -137,6 +138,7 @@ function Clients() {
   }
 
   function openEditForm(client) {
+    setSelectedClient(null);
     setEditingClientId(client.id);
     setFormData({
       name: client.name || '',
@@ -303,7 +305,8 @@ function Clients() {
             return (
               <article
                 key={client.id}
-                className="rounded-3xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-5"
+                onClick={() => setSelectedClient(client)}
+                className="cursor-pointer rounded-3xl border border-neutral-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-5"
               >
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
@@ -321,6 +324,7 @@ function Clients() {
                     href={createWhatsAppLink(client.phone, getFollowUpMessage(client))}
                     target="_blank"
                     rel="noreferrer"
+                    onClick={(event) => event.stopPropagation()}
                     className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-center text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 sm:w-auto sm:py-2"
                   >
                     WhatsApp follow-up
@@ -357,12 +361,21 @@ function Clients() {
                 ) : null}
 
                 <div className="mt-4 grid grid-cols-2 gap-2">
-                  <Button variant="secondary" onClick={() => openEditForm(client)}>
+                  <Button
+                    variant="secondary"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      openEditForm(client);
+                    }}
+                  >
                     Edit
                   </Button>
                   <Button
                     variant="danger"
-                    onClick={() => handleDeleteClient(client.id)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleDeleteClient(client.id);
+                    }}
                     disabled={deletingClientId === client.id}
                   >
                     {deletingClientId === client.id ? 'Deleting...' : 'Delete'}
@@ -513,6 +526,106 @@ function Clients() {
               </Button>
             </div>
           </form>
+        </div>
+      ) : null}
+
+      {selectedClient ? (
+        <div className="fixed inset-0 z-50 flex items-end bg-neutral-950/40 px-4 py-4 backdrop-blur-sm sm:items-center sm:justify-center">
+          <div className="max-h-[92vh] w-full overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl shadow-neutral-950/20 sm:max-w-lg sm:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium uppercase tracking-[0.14em] text-rose-500">
+                  Client details
+                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  <h3 className="text-2xl font-semibold text-neutral-950">
+                    {selectedClient.name}
+                  </h3>
+                  <StatusBadge status={getClientStatusLabel(selectedClient.status).toLowerCase()}>
+                    {getClientStatusLabel(selectedClient.status)}
+                  </StatusBadge>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedClient(null)}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-neutral-200 text-xl leading-none text-neutral-500 transition hover:bg-neutral-50 hover:text-neutral-950"
+                aria-label="Close client details"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl bg-neutral-50 p-4">
+                <p className="text-xs font-medium uppercase tracking-[0.12em] text-neutral-400">
+                  Phone
+                </p>
+                <p className="mt-1 font-medium text-neutral-800">{selectedClient.phone}</p>
+              </div>
+              {selectedClient.email ? (
+                <div className="rounded-2xl bg-neutral-50 p-4">
+                  <p className="text-xs font-medium uppercase tracking-[0.12em] text-neutral-400">
+                    Email
+                  </p>
+                  <p className="mt-1 break-all font-medium text-neutral-800">
+                    {selectedClient.email}
+                  </p>
+                </div>
+              ) : null}
+              <div className="rounded-2xl bg-neutral-50 p-4">
+                <p className="text-xs font-medium uppercase tracking-[0.12em] text-neutral-400">
+                  Last visit
+                </p>
+                <p className="mt-1 font-medium text-neutral-800">
+                  {formatDate(selectedClient.last_visit)}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-neutral-50 p-4">
+                <p className="text-xs font-medium uppercase tracking-[0.12em] text-neutral-400">
+                  Total spent
+                </p>
+                <p className="mt-1 font-medium text-neutral-800">
+                  {currency}
+                  {selectedClient.total_spent || 0}
+                </p>
+              </div>
+            </div>
+
+            {selectedClient.notes ? (
+              <div className="mt-4 rounded-2xl bg-rose-50/70 p-4">
+                <p className="text-xs font-medium uppercase tracking-[0.12em] text-rose-400">
+                  Notes
+                </p>
+                <p className="mt-2 text-sm leading-6 text-neutral-700">{selectedClient.notes}</p>
+              </div>
+            ) : null}
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              <a
+                href={createWhatsAppLink(selectedClient.phone, getFollowUpMessage(selectedClient))}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-xl border border-neutral-200 bg-white px-4 py-3 text-center text-sm font-semibold text-neutral-800 transition hover:bg-neutral-50"
+              >
+                WhatsApp follow-up
+              </a>
+              <button
+                type="button"
+                onClick={() => openEditForm(selectedClient)}
+                className="rounded-xl bg-neutral-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-neutral-800"
+              >
+                Edit client
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedClient(null)}
+                className="rounded-xl border border-neutral-200 px-4 py-3 text-sm font-semibold text-neutral-800 transition hover:bg-neutral-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       ) : null}
     </section>
