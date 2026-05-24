@@ -4,20 +4,6 @@ import { supabase } from '../../lib/supabaseClient.js';
 
 const timeOptions = ['10:00', '11:30', '13:00', '15:00', '17:00'];
 
-function getInstagramUrl(instagram) {
-  const cleanInstagram = String(instagram || '').trim();
-
-  if (!cleanInstagram) {
-    return '';
-  }
-
-  if (/^https?:\/\//i.test(cleanInstagram)) {
-    return cleanInstagram;
-  }
-
-  return `https://instagram.com/${cleanInstagram.replace(/^@/, '')}`;
-}
-
 function SalonBookingPage() {
   const { slug } = useParams();
   const [business, setBusiness] = useState(null);
@@ -40,7 +26,7 @@ function SalonBookingPage() {
 
   const selectedService = services.find((service) => service.id === selectedServiceId);
   const currency = business?.currency || '₪';
-  const instagramUrl = getInstagramUrl(business?.instagram);
+  const instagramUrl = String(business?.instagram || '').trim();
 
   useEffect(() => {
     async function loadSalon() {
@@ -215,34 +201,56 @@ function SalonBookingPage() {
       <section className="bg-gradient-to-b from-rose-50 via-white to-white px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
           <div className="rounded-3xl border border-rose-100 bg-white/85 p-6 shadow-sm shadow-rose-100 sm:p-8 lg:p-10">
-            <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
+            <div>
               <div>
                 <p className="text-sm font-medium uppercase tracking-[0.18em] text-rose-500">
                   BeautyFlow Booking
                 </p>
-                <h1 className="mt-3 text-4xl font-semibold text-neutral-950 sm:text-5xl">
-                  {business.business_name}
-                </h1>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <h1 className="text-4xl font-semibold text-neutral-950 sm:text-5xl">
+                    {business.business_name}
+                  </h1>
+                  {instagramUrl ? (
+                    <a
+                      href={instagramUrl}
+                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-rose-700 shadow-sm ring-1 ring-rose-100 transition hover:bg-rose-50 hover:text-rose-800 sm:h-11 sm:w-11"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`${business.business_name} Instagram`}
+                    >
+                      <span className="sr-only">Instagram</span>
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="h-5 w-5"
+                        aria-hidden="true"
+                        fill="none"
+                      >
+                        <rect
+                          x="3"
+                          y="3"
+                          width="18"
+                          height="18"
+                          rx="5"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                        />
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="4"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                        />
+                        <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" />
+                      </svg>
+                    </a>
+                  ) : null}
+                </div>
                 <p className="mt-4 max-w-2xl text-base leading-7 text-neutral-600">
                   {business.description}
                 </p>
-              </div>
-
-              <div className="rounded-2xl bg-rose-50/70 p-5 text-sm text-neutral-700">
-                <p className="font-medium text-neutral-950">{business.address}</p>
-                {instagramUrl ? (
-                  <a
-                    href={instagramUrl}
-                    className="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 font-semibold text-rose-700 shadow-sm ring-1 ring-rose-100 transition hover:bg-rose-50 hover:text-rose-800"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={`${business.business_name} Instagram`}
-                  >
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-rose-100 text-xs font-bold text-rose-700">
-                      IG
-                    </span>
-                    <span>Instagram</span>
-                  </a>
+                {business.address ? (
+                  <p className="mt-4 text-sm font-medium text-neutral-700">{business.address}</p>
                 ) : null}
               </div>
             </div>

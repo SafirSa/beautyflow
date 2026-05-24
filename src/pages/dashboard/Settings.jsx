@@ -161,6 +161,9 @@ function Settings() {
 
             <label className="block">
               <span className="text-sm font-medium text-neutral-700">Phone</span>
+              <p className="mt-1 hidden text-xs text-transparent lg:block" aria-hidden="true">
+                This keeps the phone input aligned.
+              </p>
               <input
                 name="phone"
                 value={formData.phone}
@@ -181,7 +184,7 @@ function Settings() {
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium text-neutral-700">Instagram</span>
+              <span className="text-sm font-medium text-neutral-700">Instagram link</span>
               <p className="mt-1 text-xs text-neutral-500">
                 Optional. Add your salon Instagram profile link.
               </p>
@@ -189,6 +192,7 @@ function Settings() {
                 name="instagram"
                 value={formData.instagram}
                 onChange={handleInputChange}
+                placeholder="https://instagram.com/your_salon"
                 className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
               />
             </label>
