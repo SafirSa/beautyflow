@@ -53,8 +53,8 @@ function DashboardHome() {
   const currency = business?.currency || '₪';
   const hasServices = services.length > 0;
   const hasBookings = bookings.length > 0;
-  const shouldShowOnboarding = !hasServices || !hasBookings;
   const bookingLink = business?.slug ? `${window.location.origin}/salon/${business.slug}` : '';
+  const hasBookingLink = Boolean(bookingLink);
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -134,6 +134,14 @@ function DashboardHome() {
 
     const message = `Book your appointment with ${businessName} here: ${bookingLink}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noreferrer');
+  }
+
+  function handleViewBookingPage() {
+    if (!bookingLink) {
+      return;
+    }
+
+    window.open(bookingLink, '_blank', 'noreferrer');
   }
 
   function handlePendingRequestsCardClick() {
@@ -227,10 +235,26 @@ function DashboardHome() {
         <p className="mt-4 max-w-2xl text-base leading-7 text-neutral-600">
           Manage your bookings, clients, and WhatsApp follow-ups from one place.
         </p>
+        {hasBookingLink ? (
+          <button
+            type="button"
+            onClick={handleViewBookingPage}
+            className="mt-5 inline-flex rounded-full border border-rose-200 bg-white/80 px-4 py-2 text-sm font-semibold text-rose-700 shadow-sm shadow-rose-100/70 transition hover:bg-rose-50"
+          >
+            Booking Page
+          </button>
+        ) : (
+          <button
+            type="button"
+            disabled
+            className="mt-5 inline-flex cursor-not-allowed rounded-full border border-neutral-200 bg-white/70 px-4 py-2 text-sm font-semibold text-neutral-400"
+          >
+            Booking Page
+          </button>
+        )}
       </div>
 
-      {shouldShowOnboarding ? (
-        <div className="rounded-3xl border border-rose-100 bg-white p-5 shadow-sm shadow-rose-100/60 sm:p-6">
+      <div className="rounded-3xl border border-rose-100 bg-white p-5 shadow-sm shadow-rose-100/60 sm:p-6">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.14em] text-rose-500">
@@ -246,7 +270,7 @@ function DashboardHome() {
             </p>
           </div>
 
-          <div className="mt-5 grid gap-3 lg:grid-cols-4">
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div className="flex h-full flex-col rounded-2xl border border-neutral-100 bg-rose-50/50 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -269,9 +293,9 @@ function DashboardHome() {
 
             <div className="flex h-full flex-col rounded-2xl border border-neutral-100 bg-white p-4">
               <div>
-                <p className="font-semibold text-neutral-950">Copy your booking link</p>
+                <p className="font-semibold text-neutral-950">Complete your business settings</p>
                 <p className="mt-2 text-sm leading-6 text-neutral-500">
-                  Find your public link and keep it ready to share.
+                  Add your contact details, address, Instagram, and notification email.
                 </p>
               </div>
               <Link
@@ -295,7 +319,7 @@ function DashboardHome() {
                   setIsBookingLinkCopied(false);
                   setIsShareModalOpen(true);
                 }}
-                className="mt-4 inline-flex w-full justify-center rounded-xl border border-neutral-200 px-4 py-3 text-sm font-semibold text-neutral-800 transition hover:bg-neutral-50 sm:mt-auto sm:w-auto"
+                className="mt-4 inline-flex w-full justify-center rounded-xl border border-neutral-200 px-4 py-3 text-sm font-semibold text-neutral-800 transition hover:bg-neutral-50 sm:mt-auto"
               >
                 Share
               </button>
@@ -322,7 +346,6 @@ function DashboardHome() {
             </div>
           </div>
         </div>
-      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
         <button
