@@ -52,6 +52,7 @@ function Register() {
     businessName: '',
     ownerName: '',
     email: '',
+    instagram: '',
     password: '',
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -119,7 +120,7 @@ function Register() {
       slug: uniqueSlug,
       description: '',
       phone: '',
-      instagram: '',
+      instagram: formData.instagram.trim(),
       address: '',
       currency: '₪',
       notification_email: formData.email,
@@ -218,6 +219,21 @@ function Register() {
               className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
               placeholder="owner@salon.com"
             />
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-medium text-neutral-700">Instagram link</span>
+            <input
+              type="url"
+              name="instagram"
+              value={formData.instagram}
+              onChange={handleChange}
+              className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
+              placeholder="https://instagram.com/your_salon"
+            />
+            <span className="mt-2 block text-xs leading-5 text-neutral-500">
+              Optional. This will appear on your public booking page.
+            </span>
           </label>
 
           <label className="block">

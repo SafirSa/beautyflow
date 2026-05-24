@@ -4,6 +4,20 @@ import { supabase } from '../../lib/supabaseClient.js';
 
 const timeOptions = ['10:00', '11:30', '13:00', '15:00', '17:00'];
 
+function getInstagramUrl(instagram) {
+  const cleanInstagram = String(instagram || '').trim();
+
+  if (!cleanInstagram) {
+    return '';
+  }
+
+  if (/^https?:\/\//i.test(cleanInstagram)) {
+    return cleanInstagram;
+  }
+
+  return `https://instagram.com/${cleanInstagram.replace(/^@/, '')}`;
+}
+
 function SalonBookingPage() {
   const { slug } = useParams();
   const [business, setBusiness] = useState(null);
@@ -26,6 +40,7 @@ function SalonBookingPage() {
 
   const selectedService = services.find((service) => service.id === selectedServiceId);
   const currency = business?.currency || '₪';
+  const instagramUrl = getInstagramUrl(business?.instagram);
 
   useEffect(() => {
     async function loadSalon() {
@@ -215,14 +230,18 @@ function SalonBookingPage() {
 
               <div className="rounded-2xl bg-rose-50/70 p-5 text-sm text-neutral-700">
                 <p className="font-medium text-neutral-950">{business.address}</p>
-                {business.instagram ? (
+                {instagramUrl ? (
                   <a
-                    href={`https://instagram.com/${business.instagram.replace('@', '')}`}
-                    className="mt-2 inline-flex text-rose-600 hover:text-rose-700"
+                    href={instagramUrl}
+                    className="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 font-semibold text-rose-700 shadow-sm ring-1 ring-rose-100 transition hover:bg-rose-50 hover:text-rose-800"
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
+                    aria-label={`${business.business_name} Instagram`}
                   >
-                    {business.instagram}
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-rose-100 text-xs font-bold text-rose-700">
+                      IG
+                    </span>
+                    <span>Instagram</span>
                   </a>
                 ) : null}
               </div>
