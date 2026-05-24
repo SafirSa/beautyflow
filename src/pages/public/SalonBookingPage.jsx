@@ -228,7 +228,7 @@ function SalonBookingPage() {
               </div>
             </div>
           </div>
-````        </div>
+        </div>
       </section>
 
       <section className="px-4 pb-12 sm:px-6 lg:px-8">
@@ -250,10 +250,10 @@ function SalonBookingPage() {
                     key={service.id}
                     type="button"
                     onClick={() => handleServiceSelect(service.id)}
-                    className={`rounded-2xl border bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+                    className={`min-h-44 rounded-2xl border p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99] ${
                       isSelected
-                        ? 'border-rose-400 bg-rose-50/70 shadow-rose-100 ring-4 ring-rose-100'
-                        : 'border-neutral-100'
+                        ? 'border-rose-500 bg-rose-50/90 shadow-lg shadow-rose-100 ring-4 ring-rose-100'
+                        : 'border-neutral-100 bg-white'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-4">
@@ -264,20 +264,26 @@ function SalonBookingPage() {
                         </p>
                       </div>
                       <span
-                        className={`mt-1 h-4 w-4 rounded-full border ${
-                          isSelected ? 'border-rose-500 bg-rose-500' : 'border-neutral-300'
+                        className={`mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${
+                          isSelected
+                            ? 'border-rose-500 bg-rose-500 text-white shadow-sm'
+                            : 'border-neutral-300 bg-white text-transparent'
                         }`}
                         aria-hidden="true"
-                      />
+                      >
+                        ✓
+                      </span>
                     </div>
                     {isSelected ? (
-                      <span className="mt-4 inline-flex rounded-full bg-white px-3 py-1 text-xs font-semibold text-rose-700 shadow-sm">
+                      <span className="mt-4 inline-flex rounded-full bg-white px-3 py-1 text-xs font-semibold text-rose-700 shadow-sm ring-1 ring-rose-100">
                         Selected
                       </span>
                     ) : null}
-                    <div className="mt-5 flex items-center justify-between text-sm">
-                      <span className="text-neutral-500">{service.duration_minutes} min</span>
-                      <span className="font-semibold text-neutral-950">
+                    <div className="mt-5 flex items-center justify-between gap-3 text-sm">
+                      <span className="rounded-full bg-neutral-50 px-3 py-1 font-medium text-neutral-600">
+                        {service.duration_minutes} min
+                      </span>
+                      <span className="rounded-full bg-white px-3 py-1 font-semibold text-neutral-950 shadow-sm ring-1 ring-neutral-100">
                         {currency}
                         {service.price}
                       </span>
