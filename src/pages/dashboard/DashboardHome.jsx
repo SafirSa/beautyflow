@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import StatCard from '../../components/ui/StatCard.jsx';
 import { supabase } from '../../lib/supabaseClient.js';
-import { createWhatsAppLink } from '../../utils/whatsapp.js';
+import { createWhatsAppLink, normalizePhoneForWhatsApp } from '../../utils/whatsapp.js';
 
 function getTodayDate() {
-  return new Date().toISOString().slice(0, 10);
+  return formatDateValue(new Date());
 }
 
 function formatDate(date) {
@@ -17,6 +17,48 @@ function formatDate(date) {
 
 function formatBookingTime(time) {
   return String(time || '').slice(0, 5);
+}
+
+function normalizePhoneForMatch(phone) {
+  if (!phone) {
+    return '';
+  }
+
+  return normalizePhoneForWhatsApp(phone);
+}
+
+function formatDateValue(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function getSunday(date) {
+  const startDate = new Date(date);
+
+  startDate.setDate(startDate.getDate() - startDate.getDay());
+  startDate.setHours(0, 0, 0, 0);
+
+  return startDate;
+}
+
+function addDays(date, days) {
+  const nextDate = new Date(date);
+  nextDate.setDate(nextDate.getDate() + days);
+
+  return nextDate;
+}
+
+function formatWeekLabel(startDate) {
+  const endDate = addDays(startDate, 6);
+  const formatter = new Intl.DateTimeFormat('en', {
+    month: 'short',
+    day: 'numeric',
+  });
+
+  return `${formatter.format(startDate)} - ${formatter.format(endDate)}`;
 }
 
 function isCreatedAfter(record, lastSeenTimestamp) {
@@ -46,6 +88,8 @@ function DashboardHome() {
   const [isBookingLinkCopied, setIsBookingLinkCopied] = useState(false);
   const [isTodayAppointmentsModalOpen, setIsTodayAppointmentsModalOpen] = useState(false);
   const [lastSeenPendingRequestsTimestamp, setLastSeenPendingRequestsTimestamp] = useState('');
+  const [selectedWeekStart, setSelectedWeekStart] = useState(() => getSunday(new Date()));
+  const [selectedCalendarAppointment, setSelectedCalendarAppointment] = useState(null);
 
   const today = getTodayDate();
   const currentMonth = today.slice(0, 7);
@@ -55,6 +99,15 @@ function DashboardHome() {
   const hasBookings = bookings.length > 0;
   const bookingLink = business?.slug ? `${window.location.origin}/salon/${business.slug}` : '';
   const hasBookingLink = Boolean(bookingLink);
+  const existingClientPhoneNumbers = useMemo(
+    () =>
+      new Set(
+        clients
+          .map((client) => normalizePhoneForMatch(client.phone))
+          .filter(Boolean),
+      ),
+    [clients],
+  );
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -158,26 +211,24 @@ function DashboardHome() {
     return `Hi ${appointment.client_name}, just confirming your appointment today at ${formatBookingTime(appointment.booking_time)} for ${appointment.service_name}. See you soon!`;
   }
 
+  function getCalendarAppointmentMessage(appointment) {
+    return `Hi ${appointment.client_name}, just confirming your appointment on ${formatDate(appointment.booking_date)} at ${formatBookingTime(appointment.booking_time)} for ${appointment.service_name}. See you soon!`;
+  }
+
   const dashboardData = useMemo(() => {
     const approvedBookings = bookings.filter((booking) => booking.status === 'approved');
+    const approvedBookingsForExistingClients = approvedBookings.filter((booking) =>
+      existingClientPhoneNumbers.has(normalizePhoneForMatch(booking.phone)),
+    );
     const pendingBookings = bookings.filter((booking) => booking.status === 'pending');
 
-    const todaysAppointments = approvedBookings.filter(
+    const todaysAppointments = approvedBookingsForExistingClients.filter(
       (booking) => booking.booking_date === today,
     );
 
     const monthlyRevenue = approvedBookings
       .filter((booking) => String(booking.booking_date).startsWith(currentMonth))
       .reduce((total, booking) => total + Number(booking.price || 0), 0);
-
-    const upcomingAppointments = approvedBookings
-      .filter((booking) => booking.booking_date >= today)
-      .sort((firstBooking, secondBooking) => {
-        const firstDateTime = `${firstBooking.booking_date} ${firstBooking.booking_time}`;
-        const secondDateTime = `${secondBooking.booking_date} ${secondBooking.booking_time}`;
-
-        return firstDateTime.localeCompare(secondDateTime);
-      });
 
     const pendingPreview = [...pendingBookings]
       .sort((firstBooking, secondBooking) =>
@@ -189,10 +240,36 @@ function DashboardHome() {
       todaysAppointments,
       pendingBookings,
       monthlyRevenue,
-      upcomingAppointments,
       pendingPreview,
     };
-  }, [bookings, clients, currentMonth, today]);
+  }, [bookings, currentMonth, existingClientPhoneNumbers, today]);
+
+  const weeklyCalendarDays = useMemo(() => {
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = addDays(selectedWeekStart, index);
+      const dateValue = formatDateValue(date);
+      const appointments = bookings
+        .filter(
+          (booking) =>
+            booking.status === 'approved' &&
+            booking.booking_date === dateValue &&
+            existingClientPhoneNumbers.has(normalizePhoneForMatch(booking.phone)),
+        )
+        .sort((firstBooking, secondBooking) =>
+          String(firstBooking.booking_time || '').localeCompare(
+            String(secondBooking.booking_time || ''),
+          ),
+        );
+
+      return {
+        date,
+        dateValue,
+        appointments,
+      };
+    });
+  }, [bookings, existingClientPhoneNumbers, selectedWeekStart]);
+
+  const weekLabel = formatWeekLabel(selectedWeekStart);
 
   const newPendingRequests = lastSeenPendingRequestsTimestamp
     ? dashboardData.pendingBookings.filter((booking) =>
@@ -396,46 +473,136 @@ function DashboardHome() {
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 className="text-xl font-semibold text-neutral-950">Upcoming appointments</h3>
-              <p className="mt-1 text-sm text-neutral-500">Your next approved salon visits.</p>
+              <h3 className="text-xl font-semibold text-neutral-950">Weekly calendar</h3>
+              <p className="mt-1 text-sm text-neutral-500">
+                Approved appointments for the selected week.
+              </p>
+            </div>
+            <div className="flex items-center justify-between gap-1 rounded-full bg-neutral-50 p-1 sm:gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedWeekStart((weekStart) => addDays(weekStart, -7))}
+                className="rounded-full px-2 py-2 text-xs font-semibold text-neutral-700 transition hover:bg-white hover:shadow-sm sm:px-3 sm:text-sm"
+              >
+                Previous
+              </button>
+              <p className="px-1 text-center text-xs font-semibold text-neutral-950 sm:px-2 sm:text-sm">
+                {weekLabel}
+              </p>
+              <button
+                type="button"
+                onClick={() => setSelectedWeekStart((weekStart) => addDays(weekStart, 7))}
+                className="rounded-full px-2 py-2 text-xs font-semibold text-neutral-700 transition hover:bg-white hover:shadow-sm sm:px-3 sm:text-sm"
+              >
+                Next
+              </button>
             </div>
           </div>
 
-          <div className="mt-5 space-y-3">
-            {dashboardData.upcomingAppointments.length === 0 ? (
-              <div className="rounded-2xl border border-neutral-100 bg-neutral-50/60 p-4 text-sm text-neutral-500">
-                No upcoming approved appointments yet.
-              </div>
-            ) : null}
+          <div className="mt-4 grid grid-cols-7 gap-1 lg:hidden">
+            {weeklyCalendarDays.map((day) => {
+              const isToday = day.dateValue === today;
 
-            {dashboardData.upcomingAppointments.slice(0, 5).map((appointment, index) => (
-              <div
-                key={appointment.id}
-                className={`grid gap-3 rounded-2xl border border-neutral-100 bg-neutral-50/60 p-4 sm:grid-cols-[1fr_auto] sm:items-center ${
-                  index > 2 ? 'hidden sm:grid' : ''
-                }`}
-              >
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-semibold text-neutral-950">{appointment.client_name}</p>
-                    <span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-medium capitalize text-rose-700">
-                      {appointment.status}
-                    </span>
+              return (
+                <div
+                  key={day.dateValue}
+                  className={`flex min-h-36 min-w-0 flex-col rounded-xl border p-1 ${
+                    isToday
+                      ? 'border-rose-200 bg-rose-50/70 shadow-sm shadow-rose-100/80'
+                      : 'border-neutral-100 bg-neutral-50/60'
+                  }`}
+                >
+                  <div>
+                    <p className="truncate text-[10px] font-semibold leading-4 text-neutral-950">
+                      {new Intl.DateTimeFormat('en', { weekday: 'short' }).format(day.date)}
+                    </p>
+                    <p className="text-[10px] leading-4 text-neutral-500">
+                      {day.date.getDate()}
+                    </p>
                   </div>
-                  <p className="mt-1 text-sm text-neutral-600">{appointment.service_name}</p>
-                  <p className="mt-2 text-sm text-neutral-500">
-                    {formatDate(appointment.booking_date)} at {appointment.booking_time}
-                  </p>
-                </div>
 
-                <p className="text-lg font-semibold text-neutral-950">
-                  {currency}
-                  {appointment.price || 0}
-                </p>
-              </div>
-            ))}
+                  <div className="mt-1 flex-1 space-y-1 overflow-y-auto">
+                    {day.appointments.length === 0 ? (
+                      <p className="rounded-lg bg-white/70 px-1 py-1 text-[9px] font-medium leading-3 text-neutral-400">
+                        No appts
+                      </p>
+                    ) : null}
+
+                    {day.appointments.map((appointment) => (
+                      <button
+                        key={appointment.id}
+                        type="button"
+                        onClick={() => setSelectedCalendarAppointment(appointment)}
+                        className="w-full rounded-lg border border-rose-100 bg-white p-1 text-left shadow-sm shadow-rose-50 transition hover:border-rose-200"
+                      >
+                        <p className="text-[10px] font-semibold leading-4 text-rose-700">
+                          {formatBookingTime(appointment.booking_time)}
+                        </p>
+                        <p className="truncate text-[10px] font-semibold leading-4 text-neutral-950">
+                          {appointment.client_name}
+                        </p>
+                        <p className="truncate text-[9px] leading-3 text-neutral-500">
+                          {appointment.service_name}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-5 hidden gap-3 lg:grid lg:grid-cols-7">
+            {weeklyCalendarDays.map((day) => {
+              const isToday = day.dateValue === today;
+
+              return (
+                <div
+                  key={day.dateValue}
+                  className={`flex min-h-52 flex-col rounded-2xl border p-3 lg:min-h-[24rem] ${
+                    isToday
+                      ? 'border-rose-200 bg-rose-50/70 shadow-sm shadow-rose-100/80'
+                      : 'border-neutral-100 bg-neutral-50/60'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2 lg:block">
+                    <p className="text-sm font-semibold text-neutral-950">
+                      {new Intl.DateTimeFormat('en', { weekday: 'short' }).format(day.date)}
+                    </p>
+                    <p className="text-sm text-neutral-500">{formatDate(day.dateValue)}</p>
+                  </div>
+
+                  <div className="mt-3 flex-1 space-y-2 overflow-y-auto pr-1">
+                    {day.appointments.length === 0 ? (
+                      <p className="rounded-xl bg-white/70 px-3 py-2 text-xs font-medium text-neutral-400">
+                        No appointments
+                      </p>
+                    ) : null}
+
+                    {day.appointments.map((appointment) => (
+                      <button
+                        key={appointment.id}
+                        type="button"
+                        onClick={() => setSelectedCalendarAppointment(appointment)}
+                        className="w-full rounded-xl border border-rose-100 bg-white p-3 text-left shadow-sm shadow-rose-50 transition hover:-translate-y-0.5 hover:border-rose-200 hover:shadow-md"
+                      >
+                        <p className="text-sm font-semibold text-rose-700">
+                          {formatBookingTime(appointment.booking_time)}
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-neutral-950">
+                          {appointment.client_name}
+                        </p>
+                        <p className="mt-1 text-xs leading-5 text-neutral-500">
+                          {appointment.service_name}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -525,6 +692,123 @@ function DashboardHome() {
                 className="w-full rounded-xl border border-neutral-200 px-5 py-4 text-sm font-semibold text-neutral-800 transition hover:bg-neutral-50"
               >
                 Share on WhatsApp
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {selectedCalendarAppointment ? (
+        <div className="fixed inset-0 z-50 flex items-end bg-neutral-950/35 px-4 py-4 backdrop-blur-sm sm:items-center sm:justify-center">
+          <div className="max-h-[90vh] w-full overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl shadow-neutral-950/20 sm:max-w-lg sm:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-semibold text-neutral-950">Appointment details</h3>
+                <p className="mt-2 text-sm leading-6 text-neutral-500">
+                  Approved appointment from the weekly calendar.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedCalendarAppointment(null)}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-neutral-200 text-xl leading-none text-neutral-500 transition hover:bg-neutral-50 hover:text-neutral-950"
+                aria-label="Close appointment details modal"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
+              <div className="rounded-2xl bg-neutral-50 p-4">
+                <p className="text-xs font-medium uppercase tracking-[0.12em] text-neutral-400">
+                  Client name
+                </p>
+                <p className="mt-1 font-semibold text-neutral-950">
+                  {selectedCalendarAppointment.client_name}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-neutral-50 p-4">
+                <p className="text-xs font-medium uppercase tracking-[0.12em] text-neutral-400">
+                  Phone
+                </p>
+                <p className="mt-1 font-semibold text-neutral-950">
+                  {selectedCalendarAppointment.phone}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-neutral-50 p-4">
+                <p className="text-xs font-medium uppercase tracking-[0.12em] text-neutral-400">
+                  Service
+                </p>
+                <p className="mt-1 font-semibold text-neutral-950">
+                  {selectedCalendarAppointment.service_name}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-neutral-50 p-4">
+                <p className="text-xs font-medium uppercase tracking-[0.12em] text-neutral-400">
+                  Status
+                </p>
+                <p className="mt-1 font-semibold capitalize text-neutral-950">
+                  {selectedCalendarAppointment.status}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-neutral-50 p-4">
+                <p className="text-xs font-medium uppercase tracking-[0.12em] text-neutral-400">
+                  Date
+                </p>
+                <p className="mt-1 font-semibold text-neutral-950">
+                  {formatDate(selectedCalendarAppointment.booking_date)}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-neutral-50 p-4">
+                <p className="text-xs font-medium uppercase tracking-[0.12em] text-neutral-400">
+                  Time
+                </p>
+                <p className="mt-1 font-semibold text-neutral-950">
+                  {formatBookingTime(selectedCalendarAppointment.booking_time)}
+                </p>
+              </div>
+              {selectedCalendarAppointment.price ? (
+                <div className="rounded-2xl bg-neutral-50 p-4">
+                  <p className="text-xs font-medium uppercase tracking-[0.12em] text-neutral-400">
+                    Price
+                  </p>
+                  <p className="mt-1 font-semibold text-neutral-950">
+                    {currency}
+                    {selectedCalendarAppointment.price}
+                  </p>
+                </div>
+              ) : null}
+            </div>
+
+            {selectedCalendarAppointment.notes ? (
+              <div className="mt-3 rounded-2xl bg-rose-50/70 p-4">
+                <p className="text-xs font-medium uppercase tracking-[0.12em] text-rose-400">
+                  Notes
+                </p>
+                <p className="mt-2 text-sm leading-6 text-neutral-700">
+                  {selectedCalendarAppointment.notes}
+                </p>
+              </div>
+            ) : null}
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <a
+                href={createWhatsAppLink(
+                  selectedCalendarAppointment.phone,
+                  getCalendarAppointmentMessage(selectedCalendarAppointment),
+                )}
+                target="_blank"
+                rel="noreferrer"
+                className="w-full rounded-xl bg-neutral-950 px-5 py-4 text-center text-sm font-semibold text-white transition hover:bg-neutral-800"
+              >
+                WhatsApp
+              </a>
+              <button
+                type="button"
+                onClick={() => setSelectedCalendarAppointment(null)}
+                className="w-full rounded-xl border border-neutral-200 px-5 py-4 text-sm font-semibold text-neutral-800 transition hover:bg-neutral-50"
+              >
+                Close
               </button>
             </div>
           </div>

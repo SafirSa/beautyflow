@@ -214,11 +214,31 @@ function Clients() {
     closeForm();
   }
 
-  async function handleDeleteClient(clientId) {
-    setDeletingClientId(clientId);
+  async function handleDeleteClient(client) {
+    const shouldDeleteClient = window.confirm(
+      'Delete this client and their related bookings? This action cannot be undone.',
+    );
+
+    if (!shouldDeleteClient) {
+      return;
+    }
+
+    setDeletingClientId(client.id);
     setErrorMessage('');
 
-    const { error } = await supabase.from('clients').delete().eq('id', clientId);
+    const { error: bookingsDeleteError } = await supabase
+      .from('bookings')
+      .delete()
+      .eq('business_id', business.id)
+      .eq('phone', client.phone);
+
+    if (bookingsDeleteError) {
+      setDeletingClientId(null);
+      setErrorMessage(`Client bookings could not be deleted: ${bookingsDeleteError.message}`);
+      return;
+    }
+
+    const { error } = await supabase.from('clients').delete().eq('id', client.id);
 
     setDeletingClientId(null);
 
@@ -227,7 +247,9 @@ function Clients() {
       return;
     }
 
-    setClients((currentClients) => currentClients.filter((client) => client.id !== clientId));
+    setClients((currentClients) =>
+      currentClients.filter((currentClient) => currentClient.id !== client.id),
+    );
   }
 
   function getFollowUpMessage(client) {
@@ -365,7 +387,7 @@ function Clients() {
                   </Button>
                   <Button
                     variant="danger"
-                    onClick={() => handleDeleteClient(client.id)}
+                    onClick={() => handleDeleteClient(client)}
                     disabled={deletingClientId === client.id}
                   >
                     {deletingClientId === client.id ? 'Deleting...' : 'Delete'}
