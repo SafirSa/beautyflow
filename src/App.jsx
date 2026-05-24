@@ -1,17 +1,17 @@
-import { useEffect, useState } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
-import DashboardLayout from './components/layout/DashboardLayout.jsx';
-import { supabase } from './lib/supabaseClient.js';
-import Login from './pages/auth/Login.jsx';
-import Register from './pages/auth/Register.jsx';
-import LandingPage from './pages/public/LandingPage.jsx';
-import SalonBookingPage from './pages/public/SalonBookingPage.jsx';
-import DashboardHome from './pages/dashboard/DashboardHome.jsx';
-import BookingRequests from './pages/dashboard/BookingRequests.jsx';
-import Clients from './pages/dashboard/Clients.jsx';
-import Services from './pages/dashboard/Services.jsx';
-import Messages from './pages/dashboard/Messages.jsx';
-import Settings from './pages/dashboard/Settings.jsx';
+import { useEffect, useState } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
+import DashboardLayout from "./components/layout/DashboardLayout.jsx";
+import { supabase } from "./lib/supabaseClient.js";
+import Login from "./pages/auth/Login.jsx";
+import Register from "./pages/auth/Register.jsx";
+import LandingPage from "./pages/public/LandingPage.jsx";
+import SalonBookingPage from "./pages/public/SalonBookingPage.jsx";
+import DashboardHome from "./pages/dashboard/DashboardHome.jsx";
+import BookingRequests from "./pages/dashboard/BookingRequests.jsx";
+import Clients from "./pages/dashboard/Clients.jsx";
+import Services from "./pages/dashboard/Services.jsx";
+import Messages from "./pages/dashboard/Messages.jsx";
+import Settings from "./pages/dashboard/Settings.jsx";
 
 function AuthLoader() {
   return (
@@ -39,7 +39,7 @@ function App() {
 
   useEffect(() => {
     if (supabase) {
-      console.log('Supabase client connected');
+      console.log("Supabase client connected");
       console.log(import.meta.env.VITE_SUPABASE_URL);
     }
 

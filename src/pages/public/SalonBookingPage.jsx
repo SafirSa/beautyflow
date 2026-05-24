@@ -21,6 +21,7 @@ function SalonBookingPage() {
   const [error, setError] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
 
   const selectedService = services.find((service) => service.id === selectedServiceId);
   const currency = business?.currency || '₪';
@@ -89,6 +90,16 @@ function SalonBookingPage() {
       return;
     }
 
+    setError('');
+    setIsSubmitted(false);
+    setIsReviewModalOpen(true);
+  }
+
+  async function handleConfirmRequest() {
+    if (!selectedService || isSubmitting) {
+      return;
+    }
+
     setIsSubmitting(true);
     setError('');
     setIsSubmitted(false);
@@ -106,10 +117,10 @@ function SalonBookingPage() {
       price: selectedService.price,
     });
 
-    setIsSubmitting(false);
-
     if (bookingError) {
       setError(`Appointment request could not be sent: ${bookingError.message}`);
+      setIsSubmitting(false);
+      setIsReviewModalOpen(false);
       return;
     }
 
@@ -135,6 +146,8 @@ function SalonBookingPage() {
       }
     }
 
+    setIsSubmitting(false);
+    setIsReviewModalOpen(false);
     setIsSubmitted(true);
   }
 
@@ -213,7 +226,7 @@ function SalonBookingPage() {
                     onClick={() => handleServiceSelect(service.id)}
                     className={`rounded-2xl border bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
                       isSelected
-                        ? 'border-rose-300 ring-4 ring-rose-100'
+                        ? 'border-rose-400 bg-rose-50/70 shadow-rose-100 ring-4 ring-rose-100'
                         : 'border-neutral-100'
                     }`}
                   >
@@ -231,6 +244,11 @@ function SalonBookingPage() {
                         aria-hidden="true"
                       />
                     </div>
+                    {isSelected ? (
+                      <span className="mt-4 inline-flex rounded-full bg-white px-3 py-1 text-xs font-semibold text-rose-700 shadow-sm">
+                        Selected
+                      </span>
+                    ) : null}
                     <div className="mt-5 flex items-center justify-between text-sm">
                       <span className="text-neutral-500">{service.duration_minutes} min</span>
                       <span className="font-semibold text-neutral-950">
@@ -338,11 +356,118 @@ function SalonBookingPage() {
               disabled={isSubmitting}
               className="mt-6 w-full rounded-xl bg-neutral-950 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-neutral-800"
             >
-              {isSubmitting ? 'Sending request...' : 'Request Appointment'}
+              Request Appointment
             </button>
           </form>
         </div>
       </section>
+
+      {isReviewModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-end bg-neutral-950/40 px-4 py-4 backdrop-blur-sm sm:items-center sm:justify-center">
+          <div className="max-h-[92vh] w-full overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl shadow-neutral-950/20 sm:max-w-lg sm:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium uppercase tracking-[0.14em] text-rose-500">
+                  Almost done
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold text-neutral-950">
+                  Review your booking request
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsReviewModalOpen(false)}
+                disabled={isSubmitting}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-neutral-200 text-xl leading-none text-neutral-500 transition hover:bg-neutral-50 hover:text-neutral-950 disabled:cursor-not-allowed disabled:opacity-60"
+                aria-label="Close booking review"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-rose-100 bg-rose-50/70 p-4">
+              <div className="space-y-3 text-sm">
+                <div className="flex items-start justify-between gap-4">
+                  <span className="text-neutral-500">Salon</span>
+                  <span className="text-right font-semibold text-neutral-950">
+                    {business.business_name}
+                  </span>
+                </div>
+                <div className="flex items-start justify-between gap-4">
+                  <span className="text-neutral-500">Client name</span>
+                  <span className="text-right font-medium text-neutral-800">
+                    {formData.name}
+                  </span>
+                </div>
+                <div className="flex items-start justify-between gap-4">
+                  <span className="text-neutral-500">Phone</span>
+                  <span className="text-right font-medium text-neutral-800">
+                    {formData.phone}
+                  </span>
+                </div>
+                <div className="flex items-start justify-between gap-4">
+                  <span className="text-neutral-500">Service</span>
+                  <span className="text-right font-semibold text-neutral-950">
+                    {selectedService?.name}
+                  </span>
+                </div>
+                <div className="flex items-start justify-between gap-4">
+                  <span className="text-neutral-500">Duration</span>
+                  <span className="text-right font-medium text-neutral-800">
+                    {selectedService?.duration_minutes} min
+                  </span>
+                </div>
+                <div className="flex items-start justify-between gap-4">
+                  <span className="text-neutral-500">Price</span>
+                  <span className="text-right font-medium text-neutral-800">
+                    {currency}
+                    {selectedService?.price}
+                  </span>
+                </div>
+                <div className="flex items-start justify-between gap-4">
+                  <span className="text-neutral-500">Date</span>
+                  <span className="text-right font-medium text-neutral-800">
+                    {formData.date}
+                  </span>
+                </div>
+                <div className="flex items-start justify-between gap-4">
+                  <span className="text-neutral-500">Time</span>
+                  <span className="text-right font-medium text-neutral-800">
+                    {formData.time}
+                  </span>
+                </div>
+                {formData.notes ? (
+                  <div className="border-t border-rose-100 pt-3">
+                    <span className="text-neutral-500">Notes</span>
+                    <p className="mt-2 rounded-xl bg-white/75 p-3 text-sm leading-6 text-neutral-700">
+                      {formData.notes}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setIsReviewModalOpen(false)}
+                disabled={isSubmitting}
+                className="w-full rounded-xl border border-neutral-200 px-5 py-4 text-sm font-semibold text-neutral-800 transition hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Edit Details / Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRequest}
+                disabled={isSubmitting}
+                className="w-full rounded-xl bg-neutral-950 px-5 py-4 text-sm font-semibold text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {isSubmitting ? 'Sending request...' : 'Confirm Request'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
