@@ -86,7 +86,7 @@ function LandingPage() {
                 to="/register"
                 className="rounded-xl bg-neutral-950 px-6 py-4 text-center text-sm font-semibold text-white shadow-lg shadow-neutral-900/10 transition hover:bg-neutral-800"
               >
-                Start 10-day free trial
+                Start 14-day free trial
               </Link>
               <Link
                 to="/salon/maya-nails"
@@ -168,7 +168,7 @@ function LandingPage() {
                 WhatsApp follow-ups.
               </p>
               <p className="mt-2 text-sm font-medium text-rose-700">
-                Try BeautyFlow free for 10 days. No credit card required.
+                Try BeautyFlow free for 14 days. No credit card required.
               </p>
             </div>
             <p className="text-4xl font-semibold text-neutral-950">₪99/month</p>
@@ -186,7 +186,7 @@ function LandingPage() {
             to="/register"
             className="mt-8 block rounded-xl bg-neutral-950 px-6 py-4 text-center text-sm font-semibold text-white transition hover:bg-neutral-800"
           >
-            Start 10-day free trial
+            Start 14-day free trial
           </Link>
         </div>
       </section>
@@ -200,7 +200,7 @@ function LandingPage() {
             to="/register"
             className="mt-8 inline-flex rounded-xl bg-white px-6 py-4 text-sm font-semibold text-neutral-950 transition hover:bg-rose-50"
           >
-            Start 10-day free trial
+            Start 14-day free trial
           </Link>
         </div>
       </section>

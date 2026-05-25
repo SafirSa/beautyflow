@@ -46,9 +46,13 @@ function Login() {
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-rose-50 via-white to-stone-50 px-4 py-10 text-neutral-950">
       <section className="w-full max-w-md rounded-3xl border border-rose-100 bg-white p-6 shadow-xl shadow-rose-100/70 sm:p-8">
         <div className="text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-100 text-sm font-bold text-rose-700">
+          <Link
+            to="/"
+            aria-label="Go to BeautyFlow landing page"
+            className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-100 text-sm font-bold text-rose-700"
+          >
             BF
-          </div>
+          </Link>
           <p className="mt-4 text-sm font-medium uppercase tracking-[0.16em] text-rose-500">
             BeautyFlow
           </p>
