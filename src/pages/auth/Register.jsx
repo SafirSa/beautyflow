@@ -46,6 +46,20 @@ function isDuplicateSlugError(error) {
   );
 }
 
+function normalizeInstagramUrl(instagram) {
+  const cleanInstagram = instagram.trim();
+
+  if (!cleanInstagram) {
+    return '';
+  }
+
+  if (/^https?:\/\/instagram\.com\//i.test(cleanInstagram)) {
+    return cleanInstagram;
+  }
+
+  return `https://instagram.com/${cleanInstagram.replace(/^@/, '')}`;
+}
+
 function Register() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -125,7 +139,7 @@ function Register() {
       slug: uniqueSlug,
       description: '',
       phone: '',
-      instagram: formData.instagram.trim(),
+      instagram: normalizeInstagramUrl(formData.instagram),
       address: '',
       currency: '₪',
       notification_email: formData.email,
@@ -231,17 +245,17 @@ function Register() {
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium text-neutral-700">Instagram</span>
+            <span className="text-sm font-medium text-neutral-700">Instagram username</span>
             <input
-              type="url"
+              type="text"
               name="instagram"
               value={formData.instagram}
               onChange={handleChange}
               className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
-              placeholder="type your instagram username"
+              placeholder="luna_beauty_studio"
             />
             <span className="mt-2 block text-xs leading-5 text-neutral-500">
-              Optional. This will appear on your public booking page.
+              Optional. Add your salon Instagram username.
             </span>
           </label>
 
