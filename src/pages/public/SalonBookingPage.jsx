@@ -508,6 +508,10 @@ function SalonBookingPage() {
         </div>
       </section>
 
+      <footer className="px-4 pb-8 text-center text-xs font-medium text-neutral-400 sm:px-6">
+        Powered by BeautyFlow
+      </footer>
+
       {isReviewModalOpen ? (
         <div className="fixed inset-0 z-50 flex items-end bg-neutral-950/40 px-4 py-4 backdrop-blur-sm sm:items-center sm:justify-center">
           <div className="max-h-[92vh] w-full overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl shadow-neutral-950/20 sm:max-w-lg sm:p-6">
