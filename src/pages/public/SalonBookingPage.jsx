@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient.js';
+import { createWhatsAppLink } from '../../utils/whatsapp.js';
 
 const timeOptions = ['10:00', '11:30', '13:00', '15:00', '17:00'];
 
@@ -27,6 +28,8 @@ function SalonBookingPage() {
   const selectedService = services.find((service) => service.id === selectedServiceId);
   const currency = business?.currency || '₪';
   const instagramUrl = String(business?.instagram || '').trim();
+  const salonPhone = String(business?.phone || '').trim();
+  const whatsappContactMessage = 'Hi, I have a question about booking an appointment.';
 
   useEffect(() => {
     async function loadSalon() {
@@ -242,6 +245,35 @@ function SalonBookingPage() {
                           strokeWidth="1.8"
                         />
                         <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" />
+                      </svg>
+                    </a>
+                  ) : null}
+                  {salonPhone ? (
+                    <a
+                      href={createWhatsAppLink(salonPhone, whatsappContactMessage)}
+                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-emerald-700 shadow-sm ring-1 ring-emerald-100 transition hover:bg-emerald-50 hover:text-emerald-800 sm:h-11 sm:w-11"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Contact ${business.business_name} on WhatsApp`}
+                    >
+                      <span className="sr-only">WhatsApp</span>
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="h-5 w-5"
+                        aria-hidden="true"
+                        fill="none"
+                      >
+                        <path
+                          d="M5.2 18.8 6.1 16A7.8 7.8 0 1 1 8 17.9l-2.8.9Z"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M9.2 8.8c.2-.4.4-.4.7-.4h.5c.2 0 .4.1.5.4l.6 1.4c.1.2.1.4-.1.6l-.4.5c.5.9 1.2 1.6 2.2 2.1l.5-.5c.2-.2.4-.2.6-.1l1.4.6c.3.1.4.3.4.6v.5c0 .3-.1.5-.4.7-.5.3-1.1.4-1.7.3-2.6-.5-4.9-2.8-5.4-5.4-.1-.6 0-1.2.3-1.7Z"
+                          fill="currentColor"
+                        />
                       </svg>
                     </a>
                   ) : null}
