@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom';
 import landingHero from '../../assets/landing-hero.png';
 
+const lemonSqueezyCheckoutLink =
+  'https://beautyflow.lemonsqueezy.com/checkout/buy/22219d50-12a1-4978-b69f-4410a3035efc';
+
 const features = [
   {
     title: 'Personal booking link',
@@ -82,12 +85,14 @@ function LandingPage() {
               confirmations and follow-ups from one easy dashboard.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link
-                to="/register"
+              <a
+                href={lemonSqueezyCheckoutLink}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="rounded-xl bg-neutral-950 px-6 py-4 text-center text-sm font-semibold text-white shadow-lg shadow-neutral-900/10 transition hover:bg-neutral-800"
               >
-                Get started
-              </Link>
+                Start 10-day free trial
+              </a>
               <Link
                 to="/salon/maya-nails"
                 className="rounded-xl border border-neutral-200 bg-white/90 px-6 py-4 text-center text-sm font-semibold text-neutral-800 shadow-sm backdrop-blur transition hover:bg-white"
