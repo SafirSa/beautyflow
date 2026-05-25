@@ -1,23 +1,25 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import Button from '../../components/ui/Button.jsx';
-import { supabase } from '../../lib/supabaseClient.js';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import Button from "../../components/ui/Button.jsx";
+import { supabase } from "../../lib/supabaseClient.js";
 
 function createBaseSlug(businessName) {
-  return businessName
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '')
-    .replace(/-+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'salon';
+  return (
+    businessName
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "")
+      .replace(/-+/g, "-")
+      .replace(/^-+|-+$/g, "") || "salon"
+  );
 }
 
 async function generateUniqueSlug(baseSlug) {
   const { data, error } = await supabase
-    .from('businesses')
-    .select('slug')
-    .like('slug', `${baseSlug}%`);
+    .from("businesses")
+    .select("slug")
+    .like("slug", `${baseSlug}%`);
 
   if (error) {
     throw error;
@@ -40,9 +42,9 @@ async function generateUniqueSlug(baseSlug) {
 
 function isDuplicateSlugError(error) {
   return (
-    error?.code === '23505' ||
-    error?.message?.includes('businesses_slug_key') ||
-    error?.message?.includes('duplicate key')
+    error?.code === "23505" ||
+    error?.message?.includes("businesses_slug_key") ||
+    error?.message?.includes("duplicate key")
   );
 }
 
@@ -50,27 +52,27 @@ function normalizeInstagramUrl(instagram) {
   const cleanInstagram = instagram.trim();
 
   if (!cleanInstagram) {
-    return '';
+    return "";
   }
 
   if (/^https?:\/\/instagram\.com\//i.test(cleanInstagram)) {
     return cleanInstagram;
   }
 
-  return `https://instagram.com/${cleanInstagram.replace(/^@/, '')}`;
+  return `https://instagram.com/${cleanInstagram.replace(/^@/, "")}`;
 }
 
 function Register() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    businessName: '',
-    ownerName: '',
-    email: '',
-    instagram: '',
-    password: '',
+    businessName: "",
+    ownerName: "",
+    email: "",
+    instagram: "",
+    password: "",
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState("");
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -79,13 +81,13 @@ function Register() {
       ...currentFormData,
       [name]: value,
     }));
-    setErrorMessage('');
+    setErrorMessage("");
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
     setIsLoading(true);
-    setErrorMessage('');
+    setErrorMessage("");
 
     const baseSlug = createBaseSlug(formData.businessName);
     let uniqueSlug;
@@ -93,7 +95,9 @@ function Register() {
     try {
       uniqueSlug = await generateUniqueSlug(baseSlug);
     } catch (slugError) {
-      setErrorMessage(`Business profile could not be created: ${slugError.message}`);
+      setErrorMessage(
+        `Business profile could not be created: ${slugError.message}`,
+      );
       setIsLoading(false);
       return;
     }
@@ -104,10 +108,10 @@ function Register() {
     });
 
     if (error) {
-      const isExistingEmail = error.message.toLowerCase().includes('already');
+      const isExistingEmail = error.message.toLowerCase().includes("already");
       setErrorMessage(
         isExistingEmail
-          ? 'An account with this email already exists. Please log in.'
+          ? "An account with this email already exists. Please log in."
           : `Registration failed: ${error.message}`,
       );
       setIsLoading(false);
@@ -117,13 +121,17 @@ function Register() {
     const user = data.user;
 
     if (!user) {
-      setErrorMessage('Registration failed: Supabase did not return a new user.');
+      setErrorMessage(
+        "Registration failed: Supabase did not return a new user.",
+      );
       setIsLoading(false);
       return;
     }
 
     if (Array.isArray(user.identities) && user.identities.length === 0) {
-      setErrorMessage('An account with this email already exists. Please log in.');
+      setErrorMessage(
+        "An account with this email already exists. Please log in.",
+      );
       setIsLoading(false);
       return;
     }
@@ -137,20 +145,22 @@ function Register() {
       owner_id: user.id,
       business_name: formData.businessName,
       slug: uniqueSlug,
-      description: '',
-      phone: '',
+      description: "",
+      phone: "",
       instagram: normalizeInstagramUrl(formData.instagram),
-      address: '',
-      currency: '₪',
+      address: "",
+      currency: "₪",
       notification_email: formData.email,
-      subscription_status: 'trialing',
+      subscription_status: "trialing",
       trial_started_at: trialStartedAt.toISOString(),
       trial_ends_at: trialEndsAt.toISOString(),
-      subscription_plan: 'basic',
+      subscription_plan: "basic",
     };
 
     let createdBusinessSlug = businessProfile.slug;
-    let { error: businessError } = await supabase.from('businesses').insert(businessProfile);
+    let { error: businessError } = await supabase
+      .from("businesses")
+      .insert(businessProfile);
 
     if (isDuplicateSlugError(businessError)) {
       const retryBusinessProfile = {
@@ -158,34 +168,39 @@ function Register() {
         slug: `${baseSlug}-${Date.now()}`,
       };
 
-      const retryResult = await supabase.from('businesses').insert(retryBusinessProfile);
+      const retryResult = await supabase
+        .from("businesses")
+        .insert(retryBusinessProfile);
       businessError = retryResult.error;
       createdBusinessSlug = retryBusinessProfile.slug;
     }
 
     if (businessError) {
       setErrorMessage(
-        'Account was created, but business profile could not be created. Please contact support.',
+        "Account was created, but business profile could not be created. Please contact support.",
       );
       setIsLoading(false);
       return;
     }
 
-    const { error: welcomeEmailError } = await supabase.functions.invoke('send-welcome-email', {
-      body: {
-        to: formData.email,
-        ownerName: formData.ownerName,
-        businessName: formData.businessName,
-        bookingLink: `/salon/${createdBusinessSlug}`,
+    const { error: welcomeEmailError } = await supabase.functions.invoke(
+      "send-welcome-email",
+      {
+        body: {
+          to: formData.email,
+          ownerName: formData.ownerName,
+          businessName: formData.businessName,
+          bookingLink: `/salon/${createdBusinessSlug}`,
+        },
       },
-    });
+    );
 
     if (welcomeEmailError) {
-      console.error('Welcome email could not be sent:', welcomeEmailError);
+      console.error("Welcome email could not be sent:", welcomeEmailError);
     }
 
     setIsLoading(false);
-    navigate('/dashboard');
+    navigate("/dashboard");
   }
 
   return (
@@ -208,7 +223,9 @@ function Register() {
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-4">
           <label className="block">
-            <span className="text-sm font-medium text-neutral-700">Business name</span>
+            <span className="text-sm font-medium text-neutral-700">
+              Business name
+            </span>
             <input
               name="businessName"
               value={formData.businessName}
@@ -220,7 +237,9 @@ function Register() {
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium text-neutral-700">Owner name</span>
+            <span className="text-sm font-medium text-neutral-700">
+              Owner name
+            </span>
             <input
               name="ownerName"
               value={formData.ownerName}
@@ -245,14 +264,16 @@ function Register() {
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium text-neutral-700">Instagram username</span>
+            <span className="text-sm font-medium text-neutral-700">
+              Instagram
+            </span>
             <input
               type="text"
               name="instagram"
               value={formData.instagram}
               onChange={handleChange}
               className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
-              placeholder="luna_beauty_studio"
+              placeholder="enter your instagram username"
             />
             <span className="mt-2 block text-xs leading-5 text-neutral-500">
               Optional. Add your salon Instagram username.
@@ -260,7 +281,9 @@ function Register() {
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium text-neutral-700">Password</span>
+            <span className="text-sm font-medium text-neutral-700">
+              Password
+            </span>
             <input
               type="password"
               name="password"
@@ -279,13 +302,16 @@ function Register() {
           ) : null}
 
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Creating account...' : 'Create account'}
+            {isLoading ? "Creating account..." : "Create account"}
           </Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-neutral-500">
-          Already have an account?{' '}
-          <Link to="/login" className="font-medium text-rose-700 hover:text-rose-800">
+          Already have an account?{" "}
+          <Link
+            to="/login"
+            className="font-medium text-rose-700 hover:text-rose-800"
+          >
             Log in
           </Link>
         </p>
