@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient.js';
 import { createWhatsAppLink } from '../../utils/whatsapp.js';
 
@@ -507,6 +507,15 @@ function SalonBookingPage() {
           )}
         </div>
       </section>
+
+      <div className="px-4 pb-3 text-center sm:px-6">
+        <Link
+          to="/"
+          className="inline-flex items-center justify-center text-sm font-semibold text-rose-700 transition hover:text-rose-900"
+        >
+          Want a beautiful booking page like this for your salon? Click here
+        </Link>
+      </div>
 
       <footer className="px-4 pb-8 text-center text-xs font-medium text-neutral-400 sm:px-6">
         Powered by BeautyFlow
