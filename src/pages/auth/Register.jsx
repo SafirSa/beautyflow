@@ -277,7 +277,7 @@ function Register() {
               value={formData.instagram}
               onChange={handleChange}
               className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
-              placeholder="enter your instagram username"
+              placeholder="Enter your Instagram username"
             />
             <span className="mt-2 block text-xs leading-5 text-neutral-500">
               Optional. Add your salon Instagram username.

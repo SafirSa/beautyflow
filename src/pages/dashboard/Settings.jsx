@@ -13,13 +13,39 @@ const defaultWorkingHours = weekDays.map((day) => ({
 
 const BILLING_PORTAL_URL = 'https://beautyflow.lemonsqueezy.com/billing';
 
+function getInstagramUsername(instagram) {
+  const cleanInstagram = String(instagram || '').trim();
+
+  if (!cleanInstagram) {
+    return '';
+  }
+
+  const match = cleanInstagram.match(/^https?:\/\/(?:www\.)?instagram\.com\/([^/?#]+)/i);
+
+  if (match?.[1]) {
+    return match[1].replace(/^@/, '');
+  }
+
+  return cleanInstagram.replace(/^@/, '');
+}
+
+function normalizeInstagramUrl(instagram) {
+  const username = getInstagramUsername(instagram);
+
+  if (!username) {
+    return '';
+  }
+
+  return `https://instagram.com/${username}`;
+}
+
 function Settings() {
   const { businessProfile } = useOutletContext();
   const [formData, setFormData] = useState({
     business_name: businessProfile.business_name || '',
     description: businessProfile.description || '',
     phone: businessProfile.phone || '',
-    instagram: businessProfile.instagram || '',
+    instagram: getInstagramUsername(businessProfile.instagram),
     address: businessProfile.address || '',
     currency: businessProfile.currency || '₪',
     slug: businessProfile.slug || '',
@@ -65,7 +91,7 @@ function Settings() {
         business_name: data.business_name || '',
         description: data.description || '',
         phone: data.phone || '',
-        instagram: data.instagram || '',
+        instagram: getInstagramUsername(data.instagram),
         address: data.address || '',
         currency: data.currency || '₪',
         slug: data.slug || '',
@@ -118,7 +144,7 @@ function Settings() {
         business_name: formData.business_name,
         description: formData.description,
         phone: formData.phone,
-        instagram: formData.instagram,
+        instagram: normalizeInstagramUrl(formData.instagram),
         address: formData.address,
         currency: formData.currency,
         slug: formData.slug,
@@ -188,13 +214,13 @@ function Settings() {
             <label className="block">
               <span className="text-sm font-medium text-neutral-700">Instagram</span>
               <p className="mt-1 text-xs text-neutral-500">
-                Optional. Add your salon Instagram profile.
+                Optional. Add your salon Instagram username.
               </p>
               <input
                 name="instagram"
                 value={formData.instagram}
                 onChange={handleInputChange}
-                placeholder="type your instagram username"
+                placeholder="Enter your Instagram username"
                 className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
               />
             </label>
