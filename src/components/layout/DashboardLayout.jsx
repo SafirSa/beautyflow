@@ -25,6 +25,27 @@ const moreNavigationItems = [
   { label: 'Settings', to: '/dashboard/settings' },
 ];
 
+const CHECKOUT_URL =
+  'https://beautyflow.lemonsqueezy.com/checkout/buy/22219d50-12a1-4978-b69f-4410a3035efc';
+
+function canAccessDashboard(businessProfile) {
+  if (businessProfile?.subscription_status === 'active') {
+    return true;
+  }
+
+  if (businessProfile?.subscription_status !== 'trialing') {
+    return false;
+  }
+
+  const trialEndsAt = new Date(businessProfile.trial_ends_at).getTime();
+
+  if (Number.isNaN(trialEndsAt)) {
+    return false;
+  }
+
+  return trialEndsAt > Date.now();
+}
+
 function DashboardLayout() {
   const { pathname } = useLocation();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
@@ -66,6 +87,32 @@ function DashboardLayout() {
 
     loadBusinessProfile();
   }, []);
+
+  if (businessProfile && !canAccessDashboard(businessProfile)) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-rose-50 via-white to-stone-50 px-4 py-10 text-neutral-950">
+        <section className="w-full max-w-lg rounded-3xl border border-rose-100 bg-white p-6 text-center shadow-xl shadow-rose-100/70 sm:p-8">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-100 text-sm font-bold text-rose-700">
+            BF
+          </div>
+          <h1 className="mt-6 text-3xl font-semibold text-neutral-950">
+            Your free trial has ended
+          </h1>
+          <p className="mt-3 text-sm leading-6 text-neutral-500">
+            To continue using BeautyFlow, choose a plan and activate your subscription.
+          </p>
+          <a
+            href={CHECKOUT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-6 inline-flex w-full justify-center rounded-xl bg-neutral-950 px-5 py-4 text-sm font-semibold text-white transition hover:bg-neutral-800"
+          >
+            Subscribe now
+          </a>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-950">

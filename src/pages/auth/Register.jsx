@@ -114,6 +114,11 @@ function Register() {
       return;
     }
 
+    const trialStartedAt = new Date();
+    const trialEndsAt = new Date(trialStartedAt);
+    // Free trial duration is 10 days.
+    trialEndsAt.setDate(trialEndsAt.getDate() + 10);
+
     const businessProfile = {
       owner_id: user.id,
       business_name: formData.businessName,
@@ -124,6 +129,10 @@ function Register() {
       address: '',
       currency: '₪',
       notification_email: formData.email,
+      subscription_status: 'trialing',
+      trial_started_at: trialStartedAt.toISOString(),
+      trial_ends_at: trialEndsAt.toISOString(),
+      subscription_plan: 'basic',
     };
 
     let createdBusinessSlug = businessProfile.slug;

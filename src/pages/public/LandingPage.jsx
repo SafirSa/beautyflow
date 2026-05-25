@@ -1,9 +1,6 @@
 import { Link } from 'react-router-dom';
 import landingHero from '../../assets/landing-hero.png';
 
-const lemonSqueezyCheckoutLink =
-  'https://beautyflow.lemonsqueezy.com/checkout/buy/22219d50-12a1-4978-b69f-4410a3035efc';
-
 const features = [
   {
     title: 'Personal booking link',
@@ -85,14 +82,12 @@ function LandingPage() {
               confirmations and follow-ups from one easy dashboard.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <a
-                href={lemonSqueezyCheckoutLink}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                to="/register"
                 className="rounded-xl bg-neutral-950 px-6 py-4 text-center text-sm font-semibold text-white shadow-lg shadow-neutral-900/10 transition hover:bg-neutral-800"
               >
                 Start 10-day free trial
-              </a>
+              </Link>
               <Link
                 to="/salon/maya-nails"
                 className="rounded-xl border border-neutral-200 bg-white/90 px-6 py-4 text-center text-sm font-semibold text-neutral-800 shadow-sm backdrop-blur transition hover:bg-white"
@@ -172,6 +167,9 @@ function LandingPage() {
                 Everything a small beauty business needs to manage bookings, clients, and
                 WhatsApp follow-ups.
               </p>
+              <p className="mt-2 text-sm font-medium text-rose-700">
+                Try BeautyFlow free for 10 days. No credit card required.
+              </p>
             </div>
             <p className="text-4xl font-semibold text-neutral-950">₪99/month</p>
           </div>
@@ -188,7 +186,7 @@ function LandingPage() {
             to="/register"
             className="mt-8 block rounded-xl bg-neutral-950 px-6 py-4 text-center text-sm font-semibold text-white transition hover:bg-neutral-800"
           >
-            Start free demo
+            Start 10-day free trial
           </Link>
         </div>
       </section>
@@ -202,7 +200,7 @@ function LandingPage() {
             to="/register"
             className="mt-8 inline-flex rounded-xl bg-white px-6 py-4 text-sm font-semibold text-neutral-950 transition hover:bg-rose-50"
           >
-            Start free demo
+            Start 10-day free trial
           </Link>
         </div>
       </section>
