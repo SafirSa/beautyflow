@@ -184,15 +184,15 @@ function Settings() {
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium text-neutral-700">Instagram link</span>
+              <span className="text-sm font-medium text-neutral-700">Instagram</span>
               <p className="mt-1 text-xs text-neutral-500">
-                Optional. Add your salon Instagram profile link.
+                Optional. Add your salon Instagram profile.
               </p>
               <input
                 name="instagram"
                 value={formData.instagram}
                 onChange={handleInputChange}
-                placeholder="https://instagram.com/your_salon"
+                placeholder="type your instagram username"
                 className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
               />
             </label>
