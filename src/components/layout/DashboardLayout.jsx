@@ -46,6 +46,32 @@ function canAccessDashboard(businessProfile) {
   return trialEndsAt > Date.now();
 }
 
+function getTrialInfo(businessProfile) {
+  if (businessProfile?.subscription_status !== 'trialing') {
+    return null;
+  }
+
+  const trialEndsAt = new Date(businessProfile.trial_ends_at);
+  const trialEndsTime = trialEndsAt.getTime();
+
+  if (Number.isNaN(trialEndsTime) || trialEndsTime <= Date.now()) {
+    return null;
+  }
+
+  const millisecondsPerDay = 1000 * 60 * 60 * 24;
+  const daysLeft = Math.max(1, Math.ceil((trialEndsTime - Date.now()) / millisecondsPerDay));
+  const formattedEndDate = new Intl.DateTimeFormat('en', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(trialEndsAt);
+
+  return {
+    daysLeft,
+    formattedEndDate,
+  };
+}
+
 function DashboardLayout() {
   const { pathname } = useLocation();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
@@ -54,6 +80,7 @@ function DashboardLayout() {
   const [businessError, setBusinessError] = useState('');
   const title = pageTitles[pathname] || 'Dashboard';
   const isMoreActive = moreNavigationItems.some((item) => item.to === pathname);
+  const trialInfo = getTrialInfo(businessProfile);
 
   useEffect(() => {
     async function loadBusinessProfile() {
@@ -134,6 +161,19 @@ function DashboardLayout() {
 
           <main className="px-3 pb-28 pt-4 sm:px-6 sm:py-6 lg:px-8 lg:pb-6">
             <div className="lg:rounded-2xl lg:border lg:border-neutral-200 lg:bg-white lg:p-6 lg:shadow-sm">
+              {trialInfo ? (
+                <div className="mb-4 rounded-2xl border border-rose-100 bg-rose-50/80 px-4 py-3 text-sm text-neutral-700 shadow-sm shadow-rose-100/60">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="font-semibold text-rose-700">
+                      Free trial: {trialInfo.daysLeft} day{trialInfo.daysLeft === 1 ? '' : 's'} left
+                    </p>
+                    <p className="text-xs font-medium text-neutral-500">
+                      Trial ends {trialInfo.formattedEndDate}
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+
               {isLoadingBusiness ? (
                 <div className="flex min-h-64 items-center justify-center rounded-3xl bg-white text-neutral-600">
                   Loading...

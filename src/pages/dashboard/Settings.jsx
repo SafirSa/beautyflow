@@ -11,6 +11,8 @@ const defaultWorkingHours = weekDays.map((day) => ({
   closesAt: day === 'Saturday' ? '' : '18:00',
 }));
 
+const BILLING_PORTAL_URL = 'https://beautyflow.lemonsqueezy.com/billing';
+
 function Settings() {
   const { businessProfile } = useOutletContext();
   const [formData, setFormData] = useState({
@@ -308,6 +310,25 @@ function Settings() {
                 </label>
               </div>
             ))}
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-neutral-950">Billing</h3>
+              <p className="mt-2 text-sm leading-6 text-neutral-500">
+                Manage your subscription, payment method, invoices, or cancellation.
+              </p>
+            </div>
+            <a
+              href={BILLING_PORTAL_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex w-full justify-center rounded-xl border border-neutral-200 bg-white px-5 py-3 text-sm font-semibold text-neutral-800 transition hover:bg-neutral-50 sm:w-auto"
+            >
+              Manage Billing
+            </a>
           </div>
         </div>
 
