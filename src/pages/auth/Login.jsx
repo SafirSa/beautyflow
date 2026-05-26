@@ -54,7 +54,7 @@ function Login() {
             BF
           </Link>
           <p className="mt-4 text-sm font-medium uppercase tracking-[0.16em] text-rose-500">
-            BeautyFlow
+            BEAUTY FLOW
           </p>
           <h1 className="mt-3 text-3xl font-semibold text-neutral-950">Welcome back</h1>
           <p className="mt-3 text-sm leading-6 text-neutral-500">
