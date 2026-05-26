@@ -145,7 +145,7 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "BeautyFlow <onboarding@resend.dev>",
+        from: "BeautyFlow <notifications@getbeautyflow.com>",
         to: body.to,
         subject: "Welcome to BeautyFlow",
         html,
