@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient.js';
+import { formatPrice } from '../../utils/currency.js';
 import { createWhatsAppLink } from '../../utils/whatsapp.js';
 
 const timeOptions = ['10:00', '11:30', '13:00', '15:00', '17:00'];
@@ -26,7 +27,7 @@ function SalonBookingPage() {
   const [submittedBooking, setSubmittedBooking] = useState(null);
 
   const selectedService = services.find((service) => service.id === selectedServiceId);
-  const currency = business?.currency || '₪';
+  const formatBusinessPrice = (price) => formatPrice(price, business?.currency || 'USD');
   const instagramUrl = String(business?.instagram || '').trim();
   const salonPhone = String(business?.phone || '').trim();
   const whatsappContactMessage = 'Hi, I have a question about booking an appointment.';
@@ -117,6 +118,7 @@ function SalonBookingPage() {
       phone: formData.phone,
       date: formData.date,
       time: formData.time,
+      price: selectedService.price,
     };
 
     const { error: bookingError } = await supabase.from('bookings').insert({
@@ -343,8 +345,7 @@ function SalonBookingPage() {
                         {service.duration_minutes} min
                       </span>
                       <span className="rounded-full bg-white px-3 py-1 font-semibold text-neutral-950 shadow-sm ring-1 ring-neutral-100">
-                        {currency}
-                        {service.price}
+                        {formatBusinessPrice(service.price)}
                       </span>
                     </div>
                   </button>
@@ -383,6 +384,12 @@ function SalonBookingPage() {
                     <span className="text-neutral-500">Time</span>
                     <span className="text-right font-medium text-neutral-800">
                       {submittedBooking.time}
+                    </span>
+                  </div>
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="text-neutral-500">Price</span>
+                    <span className="text-right font-medium text-neutral-800">
+                      {formatBusinessPrice(submittedBooking.price)}
                     </span>
                   </div>
                   <div className="flex items-start justify-between gap-4">
@@ -579,8 +586,7 @@ function SalonBookingPage() {
                 <div className="flex items-start justify-between gap-4">
                   <span className="text-neutral-500">Price</span>
                   <span className="text-right font-medium text-neutral-800">
-                    {currency}
-                    {selectedService?.price}
+                    {formatBusinessPrice(selectedService?.price)}
                   </span>
                 </div>
                 <div className="flex items-start justify-between gap-4">

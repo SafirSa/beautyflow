@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Button from '../../components/ui/Button.jsx';
 import StatusBadge from '../../components/ui/StatusBadge.jsx';
 import { supabase } from '../../lib/supabaseClient.js';
+import { formatPrice } from '../../utils/currency.js';
 import { createWhatsAppLink } from '../../utils/whatsapp.js';
 
 const statusFilters = ['All', 'New'];
@@ -58,7 +59,7 @@ function Clients() {
   const [errorMessage, setErrorMessage] = useState('');
 
   const businessName = business?.business_name || 'your salon';
-  const currency = business?.currency || '₪';
+  const formatBusinessPrice = (price) => formatPrice(price, business?.currency);
 
   useEffect(() => {
     async function loadClients() {
@@ -363,8 +364,7 @@ function Clients() {
                       Total spent
                     </p>
                     <p className="mt-1 font-medium text-neutral-800">
-                      {currency}
-                      {client.total_spent || 0}
+                      {formatBusinessPrice(client.total_spent || 0)}
                     </p>
                   </div>
                 </div>

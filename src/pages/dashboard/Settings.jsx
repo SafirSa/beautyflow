@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import Button from '../../components/ui/Button.jsx';
 import { supabase } from '../../lib/supabaseClient.js';
+import { CURRENCY_OPTIONS, normalizeCurrencyCode } from '../../utils/currency.js';
+
+const APP_BASE_URL = 'https://www.getbeautyflow.com';
 
 const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -47,7 +50,7 @@ function Settings() {
     phone: businessProfile.phone || '',
     instagram: getInstagramUsername(businessProfile.instagram),
     address: businessProfile.address || '',
-    currency: businessProfile.currency || '₪',
+    currency: normalizeCurrencyCode(businessProfile.currency),
     slug: businessProfile.slug || '',
     notification_email: businessProfile.notification_email || '',
   });
@@ -59,7 +62,7 @@ function Settings() {
   const [errorMessage, setErrorMessage] = useState('');
   const [copyMessage, setCopyMessage] = useState('');
 
-  const bookingLink = formData.slug ? `${window.location.origin}/salon/${formData.slug}` : '';
+  const bookingLink = formData.slug ? `${APP_BASE_URL}/salon/${formData.slug}` : '';
 
   useEffect(() => {
     async function loadBusinessSettings() {
@@ -93,7 +96,7 @@ function Settings() {
         phone: data.phone || '',
         instagram: getInstagramUsername(data.instagram),
         address: data.address || '',
-        currency: data.currency || '₪',
+        currency: normalizeCurrencyCode(data.currency),
         slug: data.slug || '',
         notification_email: data.notification_email || '',
       });
@@ -240,12 +243,18 @@ function Settings() {
 
             <label className="block">
               <span className="text-sm font-medium text-neutral-700">Currency</span>
-              <input
+              <select
                 name="currency"
                 value={formData.currency}
                 onChange={handleInputChange}
-                className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
-              />
+                className="mt-2 w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-rose-300 focus:ring-4 focus:ring-rose-100"
+              >
+                {CURRENCY_OPTIONS.map((currency) => (
+                  <option key={currency.code} value={currency.code}>
+                    {currency.label}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <label className="block">

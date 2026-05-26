@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Button from '../../components/ui/Button.jsx';
 import StatusBadge from '../../components/ui/StatusBadge.jsx';
 import { supabase } from '../../lib/supabaseClient.js';
+import { formatPrice } from '../../utils/currency.js';
 import { createWhatsAppLink } from '../../utils/whatsapp.js';
 
 const statusFilters = ['All', 'Pending', 'Approved', 'Rejected'];
@@ -45,6 +46,7 @@ function BookingRequests() {
   const [isDeletingRequest, setIsDeletingRequest] = useState(false);
 
   const businessName = business?.business_name || 'your salon';
+  const formatBusinessPrice = (price) => formatPrice(price, business?.currency);
   const filteredRequests =
     statusFilter === 'All'
       ? requests
@@ -291,7 +293,7 @@ function BookingRequests() {
                     ) : null}
                   </div>
 
-                  <div className="mt-4 grid grid-cols-2 gap-3 text-sm text-neutral-600 sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="mt-4 grid grid-cols-2 gap-3 text-sm text-neutral-600 sm:grid-cols-2 xl:grid-cols-5">
                     <div>
                       <p className="hidden text-xs font-medium uppercase tracking-[0.12em] text-neutral-400 sm:block">
                         Phone
@@ -316,6 +318,14 @@ function BookingRequests() {
                       </p>
                       <p className="mt-1 text-neutral-800">
                         {formatBookingTime(request.booking_time)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="hidden text-xs font-medium uppercase tracking-[0.12em] text-neutral-400 sm:block">
+                        Price
+                      </p>
+                      <p className="mt-1 text-neutral-800">
+                        {formatBusinessPrice(request.price || 0)}
                       </p>
                     </div>
                   </div>

@@ -2,7 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import StatCard from '../../components/ui/StatCard.jsx';
 import { supabase } from '../../lib/supabaseClient.js';
+import { formatPrice } from '../../utils/currency.js';
 import { createWhatsAppLink, normalizePhoneForWhatsApp } from '../../utils/whatsapp.js';
+
+const APP_BASE_URL = 'https://www.getbeautyflow.com';
 
 function getTodayDate() {
   return formatDateValue(new Date());
@@ -94,10 +97,10 @@ function DashboardHome() {
   const today = getTodayDate();
   const currentMonth = today.slice(0, 7);
   const businessName = business?.business_name || 'BeautyFlow';
-  const currency = business?.currency || '₪';
+  const formatBusinessPrice = (price) => formatPrice(price, business?.currency);
   const hasServices = services.length > 0;
   const hasBookings = bookings.length > 0;
-  const bookingLink = business?.slug ? `${window.location.origin}/salon/${business.slug}` : '';
+  const bookingLink = business?.slug ? `${APP_BASE_URL}/salon/${business.slug}` : '';
   const hasBookingLink = Boolean(bookingLink);
   const existingClientPhoneNumbers = useMemo(
     () =>
@@ -465,7 +468,7 @@ function DashboardHome() {
         <div className="hidden sm:block">
           <StatCard
             label="Monthly revenue"
-            value={`${currency}${dashboardData.monthlyRevenue}`}
+            value={formatBusinessPrice(dashboardData.monthlyRevenue)}
             helperText="Approved bookings this month"
           />
         </div>
@@ -762,14 +765,13 @@ function DashboardHome() {
               {selectedCalendarAppointment.price ? (
                 <div className="rounded-2xl bg-neutral-50 p-4">
                   <p className="text-xs font-medium uppercase tracking-[0.12em] text-neutral-400">
-                    Price
-                  </p>
-                  <p className="mt-1 font-semibold text-neutral-950">
-                    {currency}
-                    {selectedCalendarAppointment.price}
-                  </p>
-                </div>
-              ) : null}
+                  Price
+                </p>
+                <p className="mt-1 font-semibold text-neutral-950">
+                    {formatBusinessPrice(selectedCalendarAppointment.price)}
+                </p>
+              </div>
+            ) : null}
             </div>
 
             {selectedCalendarAppointment.notes ? (
@@ -866,8 +868,7 @@ function DashboardHome() {
                           Price
                         </p>
                         <p className="mt-1 font-medium text-neutral-800">
-                          {currency}
-                          {appointment.price}
+                          {formatBusinessPrice(appointment.price)}
                         </p>
                       </div>
                     ) : null}

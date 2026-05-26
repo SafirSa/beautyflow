@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button.jsx";
 import { supabase } from "../../lib/supabaseClient.js";
 
+const APP_BASE_URL = "https://www.getbeautyflow.com";
+
 function createBaseSlug(businessName) {
   return (
     businessName
@@ -149,7 +151,7 @@ function Register() {
       phone: "",
       instagram: normalizeInstagramUrl(formData.instagram),
       address: "",
-      currency: "₪",
+      currency: "USD",
       notification_email: formData.email,
       subscription_status: "trialing",
       trial_started_at: trialStartedAt.toISOString(),
@@ -190,7 +192,7 @@ function Register() {
           to: formData.email,
           ownerName: formData.ownerName,
           businessName: formData.businessName,
-          bookingLink: `/salon/${createdBusinessSlug}`,
+          bookingLink: `${APP_BASE_URL}/salon/${createdBusinessSlug}`,
         },
       },
     );

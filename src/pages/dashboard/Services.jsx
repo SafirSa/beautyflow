@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Button from '../../components/ui/Button.jsx';
 import { supabase } from '../../lib/supabaseClient.js';
+import { formatPrice } from '../../utils/currency.js';
 
 const emptyServiceForm = {
   name: '',
@@ -20,7 +21,7 @@ function Services() {
   const [deletingServiceId, setDeletingServiceId] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const currency = business?.currency || '₪';
+  const formatBusinessPrice = (price) => formatPrice(price, business?.currency);
 
   useEffect(() => {
     async function loadServices() {
@@ -227,8 +228,7 @@ function Services() {
                     Price
                   </p>
                   <p className="mt-1 font-semibold text-neutral-900">
-                    {currency}
-                    {service.price}
+                    {formatBusinessPrice(service.price)}
                   </p>
                 </div>
               </div>
