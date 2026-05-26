@@ -168,10 +168,12 @@ function LandingPage() {
                 WhatsApp follow-ups.
               </p>
               <p className="mt-2 text-sm font-medium text-rose-700">
-                Try BeautyFlow free for 14 days. No credit card required.
+                14-day free trial. No credit card required.
               </p>
             </div>
-            <p className="text-4xl font-semibold text-neutral-950">₪99/month</p>
+            <div className="text-left sm:text-right">
+              <p className="text-4xl font-semibold text-neutral-950">$29/month</p>
+            </div>
           </div>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-2">
