@@ -89,7 +89,7 @@ function LandingPage() {
                 Start 14-day free trial
               </Link>
               <Link
-                to="/salon/maya-nails"
+                to="/salon/luna-studio"
                 className="rounded-xl border border-neutral-200 bg-white/90 px-6 py-4 text-center text-sm font-semibold text-neutral-800 shadow-sm backdrop-blur transition hover:bg-white"
               >
                 View demo booking page
